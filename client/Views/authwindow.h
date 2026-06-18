@@ -19,14 +19,17 @@ private slots:
     void onLoginClicked();
     void onLoginSuccess(const User& user);
     void onLoginFailed(const QString& errorText);
+    void onThemeSwitchClicked();
 
 private:
     void setupUi();
+    void updateThemeButton();
 
 private:
     QLineEdit* loginEdit;
     QLineEdit* passwordEdit;
     QPushButton* loginButton;
+    QPushButton* themeButton;
     QLabel* statusLabel;
 };
 

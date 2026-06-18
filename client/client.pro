@@ -16,6 +16,7 @@ SOURCES += \
     Models/retailspace.cpp \
     Models/contractinfo.cpp \
     Models/paymentinfo.cpp \
+    Styles/thememanager.cpp \
     Views/authwindow.cpp \
     Views/adminwindow.cpp \
     Views/admintablewindow.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     Models/retailspace.h \
     Models/contractinfo.h \
     Models/paymentinfo.h \
+    Styles/thememanager.h \
     Views/authwindow.h \
     Views/adminwindow.h \
     Views/admintablewindow.h \

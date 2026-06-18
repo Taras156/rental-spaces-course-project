@@ -1,8 +1,10 @@
 #include "clientwindow.h"
 #include "../Controllers/clientcontroller.h"
 #include "../Network/singletonclient.h"
+#include "../Styles/thememanager.h"
 
 #include <QAbstractItemView>
+#include <QApplication>
 #include <QDate>
 #include <QFormLayout>
 #include <QHeaderView>
@@ -29,87 +31,68 @@ void ClientWindow::setupUi()
     QWidget* centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
-    centralWidget->setStyleSheet(
-        "QWidget { background-color: #f4f6fb; font-family: Segoe UI; font-size: 13px; }"
-        "QLabel#TitleLabel { color: #1f2a44; font-size: 26px; font-weight: 700; }"
-        "QLabel#SubtitleLabel { color: #667085; font-size: 13px; }"
-        "QTabWidget::pane { border: 1px solid #d0d5dd; background: white; border-radius: 12px; }"
-        "QTabBar::tab { background: #e9eef8; color: #344054; padding: 10px 18px; margin-right: 4px; border-top-left-radius: 8px; border-top-right-radius: 8px; }"
-        "QTabBar::tab:selected { background: #2f66d0; color: white; font-weight: 600; }"
-        "QPushButton { background-color: #2f66d0; color: white; border: none; border-radius: 8px; padding: 9px 16px; font-weight: 600; }"
-        "QPushButton:hover { background-color: #2455b5; }"
-        "QLineEdit, QDateEdit { background: white; border: 1px solid #cfd7e6; border-radius: 7px; padding: 7px; }"
-        "QTableWidget { background: white; border: 1px solid #d0d5dd; border-radius: 8px; gridline-color: #e4e7ec; selection-background-color: #dbeafe; }"
-        "QHeaderView::section { background-color: #eef2ff; color: #1f2a44; padding: 8px; border: none; font-weight: 600; }"
-    );
-
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->setContentsMargins(24, 20, 24, 20);
+    mainLayout->setContentsMargins(22, 20, 22, 20);
     mainLayout->setSpacing(14);
 
     QHBoxLayout* headerLayout = new QHBoxLayout();
 
     QVBoxLayout* titleBlock = new QVBoxLayout();
-
-    QLabel* titleLabel = new QLabel("Личный кабинет арендатора", this);
-    titleLabel->setObjectName("TitleLabel");
+    QLabel* titleLabel = new QLabel(QString::fromUtf8("Личный кабинет арендатора"), this);
+    titleLabel->setObjectName("MainTitle");
 
     QLabel* subtitleLabel = new QLabel(
-        "Просмотр доступных торговых точек, договоров, платежей и регистрационных данных.",
-        this
-    );
-    subtitleLabel->setObjectName("SubtitleLabel");
+        QString::fromUtf8("Просмотр свободных торговых точек, договоров, платежей и изменение регистрационных данных."),
+        this);
+    subtitleLabel->setObjectName("HintLabel");
+    subtitleLabel->setWordWrap(true);
 
     titleBlock->addWidget(titleLabel);
     titleBlock->addWidget(subtitleLabel);
 
-    QPushButton* refreshButton = new QPushButton("Обновить данные", this);
-    refreshButton->setMinimumHeight(38);
+    QVBoxLayout* actionsBlock = new QVBoxLayout();
+    themeButton = new QPushButton(this);
+    themeButton->setMinimumHeight(40);
+    updateThemeButton();
 
-    headerLayout->addLayout(titleBlock);
-    headerLayout->addStretch();
-    headerLayout->addWidget(refreshButton);
+    QPushButton* refreshButton = new QPushButton(QString::fromUtf8("Обновить данные"), this);
+    refreshButton->setMinimumHeight(40);
+
+    actionsBlock->addWidget(themeButton);
+    actionsBlock->addWidget(refreshButton);
+    actionsBlock->addStretch();
+
+    headerLayout->addLayout(titleBlock, 1);
+    headerLayout->addLayout(actionsBlock);
 
     mainLayout->addLayout(headerLayout);
 
     tabs = new QTabWidget(this);
-    tabs->setDocumentMode(true);
 
-    // =========================
-    // Вкладка свободных площадей
-    // =========================
     QWidget* freeWidget = new QWidget(this);
     QVBoxLayout* freeLayout = new QVBoxLayout(freeWidget);
-    freeLayout->setContentsMargins(18, 18, 18, 18);
-    freeLayout->setSpacing(12);
+    freeLayout->setContentsMargins(14, 14, 14, 14);
+    freeLayout->setSpacing(10);
 
-    QLabel* freeTitle = new QLabel("Подбор свободной торговой площади", this);
-    freeTitle->setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2a44;");
-
-    QLabel* freeHint = new QLabel(
-        "Укажите период аренды. Система покажет только те точки, которые не заняты в выбранные даты.",
-        this
-    );
-    freeHint->setStyleSheet("color: #667085;");
+    QLabel* freeTitle = new QLabel(QString::fromUtf8("Подбор свободных торговых площадей"), this);
+    freeTitle->setObjectName("SectionTitle");
+    QLabel* freeHint = new QLabel(QString::fromUtf8("Выберите период аренды, чтобы увидеть доступные торговые точки."), this);
+    freeHint->setObjectName("HintLabel");
+    freeHint->setWordWrap(true);
 
     QHBoxLayout* dateLayout = new QHBoxLayout();
-
     startDateEdit = new QDateEdit(QDate::currentDate(), this);
     endDateEdit = new QDateEdit(QDate::currentDate().addMonths(1), this);
-
     startDateEdit->setCalendarPopup(true);
     endDateEdit->setCalendarPopup(true);
     startDateEdit->setDisplayFormat("yyyy-MM-dd");
     endDateEdit->setDisplayFormat("yyyy-MM-dd");
+    QPushButton* findButton = new QPushButton(QString::fromUtf8("Найти площади"), this);
 
-    QPushButton* findButton = new QPushButton("Найти варианты", this);
-
-    dateLayout->addWidget(new QLabel("С:", this));
+    dateLayout->addWidget(new QLabel(QString::fromUtf8("Начало:"), this));
     dateLayout->addWidget(startDateEdit);
-    dateLayout->addSpacing(12);
-    dateLayout->addWidget(new QLabel("По:", this));
+    dateLayout->addWidget(new QLabel(QString::fromUtf8("Окончание:"), this));
     dateLayout->addWidget(endDateEdit);
-    dateLayout->addSpacing(12);
     dateLayout->addWidget(findButton);
     dateLayout->addStretch();
 
@@ -124,96 +107,52 @@ void ClientWindow::setupUi()
     freeLayout->addWidget(freeHint);
     freeLayout->addLayout(dateLayout);
     freeLayout->addWidget(freeSpacesTable);
+    tabs->addTab(freeWidget, QString::fromUtf8("Доступные точки"));
 
-    tabs->addTab(freeWidget, "Доступные точки");
-
-    // =========================
-    // Вкладка договоров
-    // =========================
     QWidget* contractsWidget = new QWidget(this);
     QVBoxLayout* contractsLayout = new QVBoxLayout(contractsWidget);
-    contractsLayout->setContentsMargins(18, 18, 18, 18);
-    contractsLayout->setSpacing(12);
-
-    QLabel* contractsTitle = new QLabel("Договоры аренды", this);
-    contractsTitle->setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2a44;");
-
-    QLabel* contractsHint = new QLabel(
-        "В этом разделе отображаются оформленные договоры и сроки аренды торговых точек.",
-        this
-    );
-    contractsHint->setStyleSheet("color: #667085;");
-
+    contractsLayout->setContentsMargins(14, 14, 14, 14);
+    contractsLayout->setSpacing(10);
+    QLabel* contractsTitle = new QLabel(QString::fromUtf8("Мои договоры аренды"), this);
+    contractsTitle->setObjectName("SectionTitle");
     contractsTable = new QTableWidget(this);
     contractsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     contractsTable->verticalHeader()->setVisible(false);
     contractsTable->setAlternatingRowColors(true);
     contractsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     contractsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
     contractsLayout->addWidget(contractsTitle);
-    contractsLayout->addWidget(contractsHint);
     contractsLayout->addWidget(contractsTable);
+    tabs->addTab(contractsWidget, QString::fromUtf8("Договоры"));
 
-    tabs->addTab(contractsWidget, "Мои договоры");
-
-    // =========================
-    // Вкладка платежей
-    // =========================
     QWidget* paymentsWidget = new QWidget(this);
     QVBoxLayout* paymentsLayout = new QVBoxLayout(paymentsWidget);
-    paymentsLayout->setContentsMargins(18, 18, 18, 18);
-    paymentsLayout->setSpacing(12);
-
-    QLabel* paymentsTitle = new QLabel("Платежи по аренде", this);
-    paymentsTitle->setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2a44;");
-
-    QLabel* paymentsHint = new QLabel(
-        "Таблица содержит историю ежемесячных платежей по договорам аренды.",
-        this
-    );
-    paymentsHint->setStyleSheet("color: #667085;");
-
+    paymentsLayout->setContentsMargins(14, 14, 14, 14);
+    paymentsLayout->setSpacing(10);
+    QLabel* paymentsTitle = new QLabel(QString::fromUtf8("История платежей"), this);
+    paymentsTitle->setObjectName("SectionTitle");
     paymentsTable = new QTableWidget(this);
     paymentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     paymentsTable->verticalHeader()->setVisible(false);
     paymentsTable->setAlternatingRowColors(true);
     paymentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     paymentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
     paymentsLayout->addWidget(paymentsTitle);
-    paymentsLayout->addWidget(paymentsHint);
     paymentsLayout->addWidget(paymentsTable);
+    tabs->addTab(paymentsWidget, QString::fromUtf8("Платежи"));
 
-    tabs->addTab(paymentsWidget, "Оплаты");
-
-    // =========================
-    // Вкладка профиля
-    // =========================
     QWidget* profileWidget = new QWidget(this);
-    QHBoxLayout* profileMainLayout = new QHBoxLayout(profileWidget);
-    profileMainLayout->setContentsMargins(18, 18, 18, 18);
-    profileMainLayout->setSpacing(24);
+    QVBoxLayout* profileLayout = new QVBoxLayout(profileWidget);
+    profileLayout->setContentsMargins(14, 14, 14, 14);
+    profileLayout->setSpacing(10);
 
-    QWidget* profileCard = new QWidget(this);
-    profileCard->setStyleSheet("QWidget { background-color: white; border-radius: 14px; }");
-
-    QVBoxLayout* profileLayout = new QVBoxLayout(profileCard);
-    profileLayout->setContentsMargins(22, 22, 22, 22);
-    profileLayout->setSpacing(14);
-
-    QLabel* profileTitle = new QLabel("Данные арендатора", this);
-    profileTitle->setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2a44;");
-
-    QLabel* profileHint = new QLabel(
-        "Здесь можно изменить сведения об организации и задать новый пароль для входа.",
-        this
-    );
-    profileHint->setStyleSheet("color: #667085;");
+    QLabel* profileTitle = new QLabel(QString::fromUtf8("Регистрационные данные"), this);
+    profileTitle->setObjectName("SectionTitle");
+    QLabel* profileHint = new QLabel(QString::fromUtf8("Измените сведения о клиенте или задайте новый пароль."), this);
+    profileHint->setObjectName("HintLabel");
+    profileHint->setWordWrap(true);
 
     QFormLayout* profileForm = new QFormLayout();
-    profileForm->setLabelAlignment(Qt::AlignRight);
-    profileForm->setFormAlignment(Qt::AlignTop);
     profileForm->setHorizontalSpacing(16);
     profileForm->setVerticalSpacing(12);
 
@@ -225,67 +164,26 @@ void ClientWindow::setupUi()
     newPasswordEdit = new QLineEdit(this);
     newPasswordEdit->setEchoMode(QLineEdit::Password);
 
-    nameEdit->setPlaceholderText("Название организации");
-    addressEdit->setPlaceholderText("Адрес организации");
-    phoneEdit->setPlaceholderText("Контактный телефон");
-    requisitesEdit->setPlaceholderText("Банковские реквизиты / ИНН");
-    contactPersonEdit->setPlaceholderText("ФИО контактного лица");
-    newPasswordEdit->setPlaceholderText("Новый пароль");
-
-    profileForm->addRow("Организация:", nameEdit);
-    profileForm->addRow("Адрес:", addressEdit);
-    profileForm->addRow("Телефон:", phoneEdit);
-    profileForm->addRow("Реквизиты:", requisitesEdit);
-    profileForm->addRow("Контактное лицо:", contactPersonEdit);
-    profileForm->addRow("Новый пароль:", newPasswordEdit);
+    profileForm->addRow(QString::fromUtf8("Название:"), nameEdit);
+    profileForm->addRow(QString::fromUtf8("Адрес:"), addressEdit);
+    profileForm->addRow(QString::fromUtf8("Телефон:"), phoneEdit);
+    profileForm->addRow(QString::fromUtf8("Реквизиты:"), requisitesEdit);
+    profileForm->addRow(QString::fromUtf8("Контактное лицо:"), contactPersonEdit);
+    profileForm->addRow(QString::fromUtf8("Новый пароль:"), newPasswordEdit);
 
     QHBoxLayout* profileButtons = new QHBoxLayout();
-
-    QPushButton* saveProfileButton = new QPushButton("Сохранить данные", this);
-    QPushButton* changePasswordButton = new QPushButton("Сменить пароль", this);
-
-    changePasswordButton->setStyleSheet(
-        "QPushButton { background-color: #12a150; }"
-        "QPushButton:hover { background-color: #0f8a45; }"
-    );
-
+    QPushButton* saveProfileButton = new QPushButton(QString::fromUtf8("Сохранить данные"), this);
+    QPushButton* changePasswordButton = new QPushButton(QString::fromUtf8("Сменить пароль"), this);
     profileButtons->addWidget(saveProfileButton);
     profileButtons->addWidget(changePasswordButton);
     profileButtons->addStretch();
 
     profileLayout->addWidget(profileTitle);
     profileLayout->addWidget(profileHint);
-    profileLayout->addSpacing(8);
     profileLayout->addLayout(profileForm);
-    profileLayout->addSpacing(8);
     profileLayout->addLayout(profileButtons);
     profileLayout->addStretch();
-
-    QWidget* helpCard = new QWidget(this);
-    helpCard->setStyleSheet("QWidget { background-color: #eef2ff; border-radius: 14px; }");
-
-    QVBoxLayout* helpLayout = new QVBoxLayout(helpCard);
-    helpLayout->setContentsMargins(20, 20, 20, 20);
-
-    QLabel* helpTitle = new QLabel("Памятка", this);
-    helpTitle->setStyleSheet("font-size: 17px; font-weight: 700; color: #1f2a44;");
-
-    QLabel* helpText = new QLabel(
-        "Пароль должен содержать не менее 8 символов, заглавную букву, цифру и специальный символ.\n\n"
-        "После редактирования сведений об организации нажмите кнопку «Сохранить данные».",
-        this
-    );
-    helpText->setWordWrap(true);
-    helpText->setStyleSheet("color: #344054;");
-
-    helpLayout->addWidget(helpTitle);
-    helpLayout->addWidget(helpText);
-    helpLayout->addStretch();
-
-    profileMainLayout->addWidget(profileCard, 3);
-    profileMainLayout->addWidget(helpCard, 1);
-
-    tabs->addTab(profileWidget, "Профиль");
+    tabs->addTab(profileWidget, QString::fromUtf8("Профиль"));
 
     mainLayout->addWidget(tabs);
 
@@ -293,9 +191,22 @@ void ClientWindow::setupUi()
     connect(refreshButton, &QPushButton::clicked, this, &ClientWindow::refreshAll);
     connect(saveProfileButton, &QPushButton::clicked, this, &ClientWindow::saveProfile);
     connect(changePasswordButton, &QPushButton::clicked, this, &ClientWindow::changePassword);
+    connect(themeButton, &QPushButton::clicked, this, &ClientWindow::toggleTheme);
 
-    setWindowTitle("Личный кабинет арендатора");
+    setWindowTitle(QString::fromUtf8("Личный кабинет арендатора"));
     resize(1080, 720);
+}
+
+void ClientWindow::updateThemeButton()
+{
+    if (themeButton)
+        themeButton->setText(ThemeManager::switchButtonText());
+}
+
+void ClientWindow::toggleTheme()
+{
+    ThemeManager::toggleTheme(qApp);
+    updateThemeButton();
 }
 
 QString ClientWindow::decodeValue(const QString& value) const
@@ -340,7 +251,7 @@ void ClientWindow::handleServerMessage(const QString& message)
         for (int i = 1; i < blocks.size(); ++i)
             rows << blocks[i].split(";");
         fillTable(freeSpacesTable,
-                  {"ID точки", "Этаж", "Площадь", "Кондиционер", "Стоимость в день"},
+                  {QString::fromUtf8("ID точки"), QString::fromUtf8("Этаж"), QString::fromUtf8("Площадь"), QString::fromUtf8("Кондиционер"), QString::fromUtf8("Стоимость в день")},
                   rows);
         return;
     }
@@ -352,7 +263,7 @@ void ClientWindow::handleServerMessage(const QString& message)
         for (int i = 1; i < blocks.size(); ++i)
             rows << blocks[i].split(";");
         fillTable(contractsTable,
-                  {"ID договора", "Дата заключения", "ID точки", "Начало", "Окончание", "Плановая сумма"},
+                  {QString::fromUtf8("ID договора"), QString::fromUtf8("Дата заключения"), QString::fromUtf8("ID точки"), QString::fromUtf8("Начало"), QString::fromUtf8("Окончание"), QString::fromUtf8("Плановая сумма")},
                   rows);
         return;
     }
@@ -364,7 +275,7 @@ void ClientWindow::handleServerMessage(const QString& message)
         for (int i = 1; i < blocks.size(); ++i)
             rows << blocks[i].split(";");
         fillTable(paymentsTable,
-                  {"ID договора", "ID точки", "Дата оплаты", "Сумма"},
+                  {QString::fromUtf8("ID договора"), QString::fromUtf8("ID точки"), QString::fromUtf8("Дата оплаты"), QString::fromUtf8("Сумма")},
                   rows);
         return;
     }
@@ -386,21 +297,21 @@ void ClientWindow::handleServerMessage(const QString& message)
 
     if (message == "PROFILE_UPDATED")
     {
-        QMessageBox::information(this, "Готово", "Регистрационные данные сохранены.");
+        QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Регистрационные данные сохранены."));
         ClientController::instance()->loadProfile();
         return;
     }
 
     if (message == "PASSWORD_CHANGED")
     {
-        QMessageBox::information(this, "Готово", "Пароль изменён.");
+        QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Пароль изменён."));
         newPasswordEdit->clear();
         return;
     }
 
     if (message.startsWith("ERROR&") || message.startsWith("ACCESS_DENIED&"))
     {
-        QMessageBox::warning(this, "Ошибка", decodeValue(message.section('&', 1)));
+        QMessageBox::warning(this, QString::fromUtf8("Ошибка"), decodeValue(message.section('&', 1)));
     }
 }
 

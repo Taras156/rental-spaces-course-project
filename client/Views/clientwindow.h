@@ -23,11 +23,13 @@ private slots:
     void saveProfile();
     void changePassword();
     void handleServerMessage(const QString& message);
+    void toggleTheme();
 
 private:
     void setupUi();
     QString decodeValue(const QString& value) const;
     void fillTable(QTableWidget* table, const QStringList& headers, const QList<QStringList>& rows);
+    void updateThemeButton();
 
 private:
     User m_user;
@@ -38,6 +40,7 @@ private:
     QTableWidget* paymentsTable;
     QDateEdit* startDateEdit;
     QDateEdit* endDateEdit;
+    QPushButton* themeButton;
 
     QLineEdit* nameEdit;
     QLineEdit* addressEdit;

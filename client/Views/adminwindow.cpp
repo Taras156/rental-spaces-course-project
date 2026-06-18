@@ -2,13 +2,14 @@
 #include "admintablewindow.h"
 #include "../Controllers/admincontroller.h"
 #include "../Network/singletonclient.h"
+#include "../Styles/thememanager.h"
 
+#include <QApplication>
 #include <QDate>
 #include <QDateEdit>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
-#include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -28,164 +29,130 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
     QWidget* centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
-    centralWidget->setStyleSheet(
-        "QWidget { background-color: #f7f9fc; color: #162033; font-family: Segoe UI; font-size: 14px; }"
-        "QFrame#TopBar { background-color: #ffffff; border: 1px solid #e4e7ec; border-radius: 18px; }"
-        "QFrame#InfoCard { background-color: #0f3d7a; border-radius: 18px; }"
-        "QLabel#MainTitle { color: #111827; font-size: 28px; font-weight: 800; }"
-        "QLabel#Subtitle { color: #667085; font-size: 14px; }"
-        "QLabel#CardTitle { color: white; font-size: 18px; font-weight: 700; }"
-        "QLabel#CardText { color: #dbeafe; font-size: 13px; }"
-        "QGroupBox { background-color: #ffffff; border: 1px solid #e4e7ec; border-radius: 16px; margin-top: 18px; padding: 18px 14px 14px 14px; font-weight: 700; color: #344054; }"
-        "QGroupBox::title { subcontrol-origin: margin; left: 18px; padding: 0 8px; background-color: #ffffff; color: #1d4ed8; }"
-        "QPushButton { background-color: #ffffff; color: #1f2937; border: 1px solid #d0d5dd; border-radius: 14px; padding: 14px 16px; text-align: left; font-size: 15px; font-weight: 600; }"
-        "QPushButton:hover { background-color: #eef4ff; border: 1px solid #2f66d0; color: #1d4ed8; }"
-        "QPushButton#PrimaryButton { background-color: #2563eb; color: white; border: none; }"
-        "QPushButton#PrimaryButton:hover { background-color: #1d4ed8; }"
-        "QPushButton#GreenButton { background-color: #12a150; color: white; border: none; }"
-        "QPushButton#GreenButton:hover { background-color: #0f8a45; }"
-        "QScrollArea { border: none; background-color: transparent; }"
-        "QLineEdit, QSpinBox, QDateEdit { background-color: #ffffff; border: 1px solid #cfd7e6; border-radius: 8px; padding: 7px; }"
-    );
+    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setContentsMargins(20, 20, 20, 20);
+    mainLayout->setSpacing(16);
 
-    QVBoxLayout* rootLayout = new QVBoxLayout(centralWidget);
-    rootLayout->setContentsMargins(22, 18, 22, 18);
-    rootLayout->setSpacing(18);
+    QHBoxLayout* headerLayout = new QHBoxLayout();
+    QVBoxLayout* titleBlock = new QVBoxLayout();
 
-    QFrame* topBar = new QFrame(this);
-    topBar->setObjectName("TopBar");
-    QHBoxLayout* topLayout = new QHBoxLayout(topBar);
-    topLayout->setContentsMargins(22, 18, 22, 18);
-    topLayout->setSpacing(20);
-
-    QVBoxLayout* titleLayout = new QVBoxLayout();
-    titleLayout->setSpacing(6);
-
-    QLabel* titleLabel = new QLabel("Административный центр", this);
+    QLabel* titleLabel = new QLabel(QString::fromUtf8("Административный центр"), this);
     titleLabel->setObjectName("MainTitle");
 
     QLabel* hintLabel = new QLabel(
-        "Управление клиентами, торговыми точками, договорами аренды, платежами и правами доступа.",
-        this
-    );
-    hintLabel->setObjectName("Subtitle");
+        QString::fromUtf8("Управление клиентами, торговыми точками, договорами аренды, платежами и правами доступа."),
+        this);
+    hintLabel->setObjectName("HintLabel");
     hintLabel->setWordWrap(true);
 
-    titleLayout->addWidget(titleLabel);
-    titleLayout->addWidget(hintLabel);
+    titleBlock->addWidget(titleLabel);
+    titleBlock->addWidget(hintLabel);
 
-    QFrame* infoCard = new QFrame(this);
-    infoCard->setObjectName("InfoCard");
-    infoCard->setMinimumWidth(310);
-    QVBoxLayout* infoLayout = new QVBoxLayout(infoCard);
-    infoLayout->setContentsMargins(18, 14, 18, 14);
+    QVBoxLayout* sideBlock = new QVBoxLayout();
+    QLabel* roleLabel = new QLabel(QString::fromUtf8("Роль: администратор"), this);
+    roleLabel->setObjectName("SectionTitle");
 
-    QLabel* infoTitle = new QLabel("Роль: администратор", this);
-    infoTitle->setObjectName("CardTitle");
+    QLabel* roleHint = new QLabel(
+        QString::fromUtf8("Доступны операции CRUD, оформление договоров и внесение ежемесячных платежей."),
+        this);
+    roleHint->setObjectName("HintLabel");
+    roleHint->setWordWrap(true);
 
-    QLabel* infoText = new QLabel(
-        "Доступны операции CRUD, оформление договоров и внесение ежемесячных платежей.",
-        this
-    );
-    infoText->setObjectName("CardText");
-    infoText->setWordWrap(true);
+    QPushButton* themeButton = new QPushButton(ThemeManager::switchButtonText(), this);
+    themeButton->setMinimumHeight(40);
+    connect(themeButton, &QPushButton::clicked, this, &AdminWindow::toggleTheme);
 
-    infoLayout->addWidget(infoTitle);
-    infoLayout->addWidget(infoText);
+    sideBlock->addWidget(roleLabel);
+    sideBlock->addWidget(roleHint);
+    sideBlock->addWidget(themeButton, 0, Qt::AlignLeft);
+    sideBlock->addStretch();
 
-    topLayout->addLayout(titleLayout, 1);
-    topLayout->addWidget(infoCard);
+    headerLayout->addLayout(titleBlock, 3);
+    headerLayout->addSpacing(12);
+    headerLayout->addLayout(sideBlock, 2);
 
-    rootLayout->addWidget(topBar);
+    mainLayout->addLayout(headerLayout);
 
     QScrollArea* scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
 
     QWidget* content = new QWidget(scrollArea);
     QVBoxLayout* contentLayout = new QVBoxLayout(content);
-    contentLayout->setContentsMargins(0, 0, 0, 0);
-    contentLayout->setSpacing(14);
+    contentLayout->setSpacing(16);
 
-    auto makeButton = [this](const QString& number, const QString& title, const QString& description) {
-        QPushButton* button = new QPushButton(number + "  " + title + "\n" + description, this);
-        button->setMinimumHeight(72);
-        button->setToolTip(description);
+    auto makeButton = [this](const QString& text, const QString& tooltip) {
+        QPushButton* button = new QPushButton(text, this);
+        button->setMinimumHeight(52);
+        button->setToolTip(tooltip);
+        button->setStyleSheet("QPushButton { text-align: left; padding-left: 14px; }");
         return button;
     };
 
     auto addGroup = [this, contentLayout](const QString& title) {
         QGroupBox* group = new QGroupBox(title, this);
         QGridLayout* grid = new QGridLayout(group);
-        grid->setContentsMargins(16, 18, 16, 16);
         grid->setHorizontalSpacing(14);
-        grid->setVerticalSpacing(14);
+        grid->setVerticalSpacing(12);
         contentLayout->addWidget(group);
         return grid;
     };
 
-    auto addTableButton = [this, makeButton](QGridLayout* grid,
-                                             int row,
-                                             int col,
-                                             const QString& number,
-                                             const QString& buttonText,
-                                             const QString& key,
-                                             const QString& title,
-                                             const QString& description) {
-        QPushButton* button = makeButton(number, buttonText, description);
+    auto addTableButton = [this, makeButton](QGridLayout* grid, int row, int col,
+                                             const QString& buttonText, const QString& key,
+                                             const QString& title, const QString& tooltip) {
+        QPushButton* button = makeButton(buttonText, tooltip);
         grid->addWidget(button, row, col);
-        connect(button, &QPushButton::clicked, this, [this, key, title]() {
-            openTable(key, title);
-        });
+        connect(button, &QPushButton::clicked, this, [this, key, title]() { openTable(key, title); });
     };
 
-    QGridLayout* mainGrid = addGroup("Разделы предметной области");
-    addTableButton(mainGrid, 0, 0, "01", "Клиенты", "clients", "Клиенты", "Организации-арендаторы и контактные данные");
-    addTableButton(mainGrid, 0, 1, "02", "Торговые точки", "retail_spaces", "Торговые точки", "Этаж, площадь, кондиционер и ставка за день");
-    addTableButton(mainGrid, 1, 0, "03", "Договоры аренды", "rental_contracts", "Договоры аренды", "Клиент и дата заключения договора");
-    addTableButton(mainGrid, 1, 1, "04", "Периоды аренды", "rented_spaces", "Арендуемые точки", "Связь договора, точки и срока аренды");
-    addTableButton(mainGrid, 2, 0, "05", "Платежи", "payments", "Платежи", "Учет поступивших платежей по договорам");
+    QGridLayout* mainGrid = addGroup(QString::fromUtf8("Основные таблицы"));
+    addTableButton(mainGrid, 0, 0, QString::fromUtf8("Клиенты"), "clients", QString::fromUtf8("Клиенты"), QString::fromUtf8("Потенциальные и текущие арендаторы"));
+    addTableButton(mainGrid, 0, 1, QString::fromUtf8("Торговые точки"), "retail_spaces", QString::fromUtf8("Торговые точки"), QString::fromUtf8("Этаж, площадь, кондиционер и стоимость аренды"));
+    addTableButton(mainGrid, 1, 0, QString::fromUtf8("Договоры аренды"), "rental_contracts", QString::fromUtf8("Договоры аренды"), QString::fromUtf8("Клиент и дата заключения договора"));
+    addTableButton(mainGrid, 1, 1, QString::fromUtf8("Арендуемые точки"), "rented_spaces", QString::fromUtf8("Арендуемые точки"), QString::fromUtf8("Связь договора с торговой точкой и периодом аренды"));
+    addTableButton(mainGrid, 2, 0, QString::fromUtf8("Платежи"), "payments", QString::fromUtf8("Платежи"), QString::fromUtf8("Ежемесячные платежи арендаторов"));
 
-    QGridLayout* usersGrid = addGroup("Учетные записи и доступ");
-    addTableButton(usersGrid, 0, 0, "06", "Пользователи", "users", "Пользователи", "Логины и хэши паролей учетных записей");
-    addTableButton(usersGrid, 0, 1, "07", "Роли", "roles", "Роли", "Справочник ролей системы");
-    addTableButton(usersGrid, 1, 0, "08", "Назначение ролей", "users_roles", "Пользователи — роли", "Связь пользователей с правами доступа");
+    QGridLayout* usersGrid = addGroup(QString::fromUtf8("Пользователи и права доступа"));
+    addTableButton(usersGrid, 0, 0, QString::fromUtf8("Пользователи"), "users", QString::fromUtf8("Пользователи"), QString::fromUtf8("Логины и хэши паролей"));
+    addTableButton(usersGrid, 0, 1, QString::fromUtf8("Роли"), "roles", QString::fromUtf8("Роли"), QString::fromUtf8("Справочник ролей"));
+    addTableButton(usersGrid, 1, 0, QString::fromUtf8("Пользователи — роли"), "users_roles", QString::fromUtf8("Пользователи — роли"), QString::fromUtf8("Назначение ролей пользователям"));
 
-    QGroupBox* actionsGroup = new QGroupBox("Операции администратора", this);
-    QHBoxLayout* actionsLayout = new QHBoxLayout(actionsGroup);
-    actionsLayout->setContentsMargins(16, 18, 16, 16);
-    actionsLayout->setSpacing(14);
-
-    QPushButton* createContractButton = new QPushButton("+  Оформить договор аренды\nСоздать договор и указать период аренды", this);
-    QPushButton* addPaymentButton = new QPushButton("₽  Зарегистрировать платеж\nВнести оплату по договору и торговой точке", this);
-
-    createContractButton->setObjectName("PrimaryButton");
-    addPaymentButton->setObjectName("GreenButton");
-    createContractButton->setMinimumHeight(76);
-    addPaymentButton->setMinimumHeight(76);
-
-    actionsLayout->addWidget(createContractButton);
-    actionsLayout->addWidget(addPaymentButton);
-
-    contentLayout->addWidget(actionsGroup);
+    QGridLayout* actionGrid = addGroup(QString::fromUtf8("Быстрые действия"));
+    QPushButton* createContractButton = makeButton(QString::fromUtf8("Оформить договор аренды"), QString::fromUtf8("Создать договор и привязать одну торговую точку к периоду аренды"));
+    QPushButton* addPaymentButton = makeButton(QString::fromUtf8("Добавить платеж"), QString::fromUtf8("Внести платеж по договору и торговой точке"));
+    actionGrid->addWidget(createContractButton, 0, 0);
+    actionGrid->addWidget(addPaymentButton, 0, 1);
 
     connect(createContractButton, &QPushButton::clicked, this, &AdminWindow::showCreateContractDialog);
     connect(addPaymentButton, &QPushButton::clicked, this, &AdminWindow::showAddPaymentDialog);
 
     contentLayout->addStretch();
     scrollArea->setWidget(content);
-    rootLayout->addWidget(scrollArea);
+    mainLayout->addWidget(scrollArea);
 
     connect(SingletonClient::getInstance(), &SingletonClient::messageFromServer, this, [this](const QString& message) {
         if (message == "CONTRACT_CREATED")
-            QMessageBox::information(this, "Готово", "Договор аренды успешно создан.");
+            QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Договор аренды создан."));
         else if (message == "PAYMENT_ADDED")
-            QMessageBox::information(this, "Готово", "Платеж успешно добавлен.");
+            QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Платеж добавлен."));
         else if (message.startsWith("ERROR&") || message.startsWith("ACCESS_DENIED&"))
-            QMessageBox::warning(this, "Ошибка", message.section('&', 1));
+            QMessageBox::warning(this, QString::fromUtf8("Ошибка"), message.section('&', 1));
     });
 
-    setWindowTitle("Административный центр");
-    resize(1120, 760);
+    setWindowTitle(QString::fromUtf8("Администратор"));
+    resize(1160, 760);
+}
+
+void AdminWindow::toggleTheme()
+{
+    ThemeManager::toggleTheme(qApp);
+
+    const auto buttons = findChildren<QPushButton*>();
+    for (QPushButton* button : buttons)
+    {
+        if (button->text().contains(QString::fromUtf8("Переключить на тему")))
+            button->setText(ThemeManager::switchButtonText());
+    }
 }
 
 void AdminWindow::openTable(const QString& tableKey, const QString& title)
@@ -198,16 +165,22 @@ void AdminWindow::openTable(const QString& tableKey, const QString& title)
 void AdminWindow::showCreateContractDialog()
 {
     QDialog dialog(this);
-    dialog.setWindowTitle("Оформление договора аренды");
-    dialog.setStyleSheet(
-        "QDialog { background-color: #f7f9fc; font-family: Segoe UI; font-size: 14px; }"
-        "QLineEdit, QSpinBox, QDateEdit { background: white; border: 1px solid #cfd7e6; border-radius: 8px; padding: 7px; }"
-        "QPushButton { padding: 7px 14px; }"
-    );
+    dialog.setWindowTitle(QString::fromUtf8("Оформление договора аренды"));
+    dialog.resize(460, 260);
 
-    QFormLayout* form = new QFormLayout(&dialog);
-    form->setContentsMargins(18, 18, 18, 18);
-    form->setSpacing(12);
+    QVBoxLayout* rootLayout = new QVBoxLayout(&dialog);
+    QLabel* title = new QLabel(QString::fromUtf8("Создание договора аренды"), &dialog);
+    title->setObjectName("SectionTitle");
+    QLabel* note = new QLabel(QString::fromUtf8("Укажите ID клиента, ID торговой точки и период аренды."), &dialog);
+    note->setObjectName("HintLabel");
+    note->setWordWrap(true);
+
+    rootLayout->addWidget(title);
+    rootLayout->addWidget(note);
+
+    QFormLayout* form = new QFormLayout();
+    form->setHorizontalSpacing(14);
+    form->setVerticalSpacing(12);
 
     QSpinBox* clientIdEdit = new QSpinBox(&dialog);
     QSpinBox* spaceIdEdit = new QSpinBox(&dialog);
@@ -221,20 +194,23 @@ void AdminWindow::showCreateContractDialog()
     startDateEdit->setDisplayFormat("yyyy-MM-dd");
     endDateEdit->setDisplayFormat("yyyy-MM-dd");
 
-    form->addRow("ID клиента:", clientIdEdit);
-    form->addRow("ID торговой точки:", spaceIdEdit);
-    form->addRow("Дата начала:", startDateEdit);
-    form->addRow("Дата окончания:", endDateEdit);
+    form->addRow(QString::fromUtf8("ID клиента:"), clientIdEdit);
+    form->addRow(QString::fromUtf8("ID торговой точки:"), spaceIdEdit);
+    form->addRow(QString::fromUtf8("Дата начала:"), startDateEdit);
+    form->addRow(QString::fromUtf8("Дата окончания:"), endDateEdit);
 
-    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    form->addWidget(buttons);
-    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    rootLayout->addLayout(form);
+
+    QDialogButtonBox* box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    box->button(QDialogButtonBox::Ok)->setText(QString::fromUtf8("Создать"));
+    box->button(QDialogButtonBox::Cancel)->setText(QString::fromUtf8("Отмена"));
+    connect(box, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(box, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    rootLayout->addWidget(box);
 
     if (dialog.exec() == QDialog::Accepted)
     {
-        AdminController::instance()->createContract(clientIdEdit->value(),
-                                                    spaceIdEdit->value(),
+        AdminController::instance()->createContract(clientIdEdit->value(), spaceIdEdit->value(),
                                                     startDateEdit->date().toString("yyyy-MM-dd"),
                                                     endDateEdit->date().toString("yyyy-MM-dd"));
     }
@@ -243,16 +219,22 @@ void AdminWindow::showCreateContractDialog()
 void AdminWindow::showAddPaymentDialog()
 {
     QDialog dialog(this);
-    dialog.setWindowTitle("Добавление платежа");
-    dialog.setStyleSheet(
-        "QDialog { background-color: #f7f9fc; font-family: Segoe UI; font-size: 14px; }"
-        "QLineEdit, QSpinBox, QDateEdit { background: white; border: 1px solid #cfd7e6; border-radius: 8px; padding: 7px; }"
-        "QPushButton { padding: 7px 14px; }"
-    );
+    dialog.setWindowTitle(QString::fromUtf8("Добавление платежа"));
+    dialog.resize(460, 260);
 
-    QFormLayout* form = new QFormLayout(&dialog);
-    form->setContentsMargins(18, 18, 18, 18);
-    form->setSpacing(12);
+    QVBoxLayout* rootLayout = new QVBoxLayout(&dialog);
+    QLabel* title = new QLabel(QString::fromUtf8("Добавление платежа"), &dialog);
+    title->setObjectName("SectionTitle");
+    QLabel* note = new QLabel(QString::fromUtf8("Укажите договор, торговую точку, дату и сумму оплаты."), &dialog);
+    note->setObjectName("HintLabel");
+    note->setWordWrap(true);
+
+    rootLayout->addWidget(title);
+    rootLayout->addWidget(note);
+
+    QFormLayout* form = new QFormLayout();
+    form->setHorizontalSpacing(14);
+    form->setVerticalSpacing(12);
 
     QSpinBox* contractIdEdit = new QSpinBox(&dialog);
     QSpinBox* spaceIdEdit = new QSpinBox(&dialog);
@@ -263,22 +245,25 @@ void AdminWindow::showAddPaymentDialog()
     spaceIdEdit->setRange(1, 1000000);
     paymentDateEdit->setCalendarPopup(true);
     paymentDateEdit->setDisplayFormat("yyyy-MM-dd");
-    amountEdit->setPlaceholderText("Например 45000.00");
+    amountEdit->setPlaceholderText(QString::fromUtf8("Например, 25000"));
 
-    form->addRow("ID договора:", contractIdEdit);
-    form->addRow("ID торговой точки:", spaceIdEdit);
-    form->addRow("Дата оплаты:", paymentDateEdit);
-    form->addRow("Сумма платежа:", amountEdit);
+    form->addRow(QString::fromUtf8("ID договора:"), contractIdEdit);
+    form->addRow(QString::fromUtf8("ID торговой точки:"), spaceIdEdit);
+    form->addRow(QString::fromUtf8("Дата оплаты:"), paymentDateEdit);
+    form->addRow(QString::fromUtf8("Сумма платежа:"), amountEdit);
 
-    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    form->addWidget(buttons);
-    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    rootLayout->addLayout(form);
+
+    QDialogButtonBox* box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    box->button(QDialogButtonBox::Ok)->setText(QString::fromUtf8("Добавить"));
+    box->button(QDialogButtonBox::Cancel)->setText(QString::fromUtf8("Отмена"));
+    connect(box, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(box, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    rootLayout->addWidget(box);
 
     if (dialog.exec() == QDialog::Accepted)
     {
-        AdminController::instance()->addPayment(contractIdEdit->value(),
-                                                spaceIdEdit->value(),
+        AdminController::instance()->addPayment(contractIdEdit->value(), spaceIdEdit->value(),
                                                 paymentDateEdit->date().toString("yyyy-MM-dd"),
                                                 amountEdit->text().trimmed());
     }
