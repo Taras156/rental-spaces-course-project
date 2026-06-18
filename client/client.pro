@@ -1,0 +1,37 @@
+QT += core gui widgets network
+
+CONFIG += c++17
+
+TEMPLATE = app
+TARGET = rental_spaces_client
+
+SOURCES += \
+    main.cpp \
+    Network/singletonclient.cpp \
+    Controllers/authcontroller.cpp \
+    Controllers/admincontroller.cpp \
+    Controllers/clientcontroller.cpp \
+    Models/user.cpp \
+    Models/client.cpp \
+    Models/retailspace.cpp \
+    Models/contractinfo.cpp \
+    Models/paymentinfo.cpp \
+    Views/authwindow.cpp \
+    Views/adminwindow.cpp \
+    Views/admintablewindow.cpp \
+    Views/clientwindow.cpp
+
+HEADERS += \
+    Network/singletonclient.h \
+    Controllers/authcontroller.h \
+    Controllers/admincontroller.h \
+    Controllers/clientcontroller.h \
+    Models/user.h \
+    Models/client.h \
+    Models/retailspace.h \
+    Models/contractinfo.h \
+    Models/paymentinfo.h \
+    Views/authwindow.h \
+    Views/adminwindow.h \
+    Views/admintablewindow.h \
+    Views/clientwindow.h

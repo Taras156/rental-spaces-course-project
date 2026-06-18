@@ -1,0 +1,16 @@
+Если сервер не может подключиться через QPSQL и пишет Driver not loaded, можно использовать QODBC.
+
+1. Установить psqlODBC через Stack Builder или официальный установщик PostgreSQL ODBC Driver.
+2. Открыть: Пуск -> Источники данных ODBC (64-разрядные).
+3. Вкладка "Системный DSN" -> Добавить.
+4. Выбрать PostgreSQL Unicode(x64).
+5. Заполнить:
+   Data Source: RentalSpacesDB
+   Database: rental_spaces_db
+   Server: localhost
+   Port: 5432
+   User Name: postgres
+   Password: Taras156
+6. Нажать Test.
+
+Сервер сначала пробует QPSQL, а если он не работает, пробует QODBC с DSN RentalSpacesDB.
