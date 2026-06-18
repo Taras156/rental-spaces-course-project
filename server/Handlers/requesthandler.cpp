@@ -55,6 +55,28 @@ QString RequestHandler::processRequest(const QString& request,
         return "OK&" + encodeValue(role) + "&" + QString::number(userId) + "&" + QString::number(clientId);
     }
 
+
+    if (command == "register_client")
+    {
+        if (parts.size() != 8)
+            return "REGISTRATION_ERROR&" + encodeValue("Неверный формат команды регистрации");
+
+        QString errorText;
+        bool ok = DatabaseManager::registerClient(
+            decodePart(parts[1]),
+            decodePart(parts[2]),
+            decodePart(parts[3]),
+            decodePart(parts[4]),
+            decodePart(parts[5]),
+            decodePart(parts[6]),
+            decodePart(parts[7]),
+            errorText
+        );
+
+        return ok ? QString("REGISTRATION_OK")
+                  : QString("REGISTRATION_ERROR&") + encodeValue(errorText);
+    }
+
     if (currentRole.isEmpty())
         return "ACCESS_DENIED&Сначала выполните вход в систему";
 

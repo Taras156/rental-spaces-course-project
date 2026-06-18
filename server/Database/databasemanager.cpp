@@ -192,6 +192,112 @@ bool DatabaseManager::loginUser(const QString& login,
     return userId > 0;
 }
 
+bool DatabaseManager::registerClient(const QString& login,
+                                     const QString& password,
+                                     const QString& organizationName,
+                                     const QString& address,
+                                     const QString& phone,
+                                     const QString& requisites,
+                                     const QString& contactPerson,
+                                     QString& errorText)
+{
+    if (login.trimmed().isEmpty() ||
+        password.isEmpty() ||
+        organizationName.trimmed().isEmpty() ||
+        address.trimmed().isEmpty() ||
+        phone.trimmed().isEmpty() ||
+        requisites.trimmed().isEmpty() ||
+        contactPerson.trimmed().isEmpty())
+    {
+        errorText = "Заполните все поля регистрации";
+        return false;
+    }
+
+    QRegularExpression regex(R"(^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$)");
+    if (!regex.match(password).hasMatch())
+    {
+        errorText = "Пароль должен быть не короче 8 символов и содержать цифру, заглавную букву и специальный символ";
+        return false;
+    }
+
+    if (!db.transaction())
+    {
+        errorText = db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery userQuery(db);
+    userQuery.prepare(
+        "INSERT INTO users (login, password_hash) "
+        "VALUES (:login, :password_hash) "
+        "RETURNING id_user"
+    );
+    userQuery.bindValue(":login", login.trimmed());
+    userQuery.bindValue(":password_hash", hashPassword(password));
+
+    if (!userQuery.exec() || !userQuery.next())
+    {
+        errorText = userQuery.lastError().text();
+        if (errorText.contains("users_login_key"))
+            errorText = "Пользователь с таким логином уже существует";
+        db.rollback();
+        return false;
+    }
+
+    const int userId = userQuery.value(0).toInt();
+
+    QSqlQuery roleQuery(db);
+    roleQuery.prepare(
+        "INSERT INTO users_roles (id_user, id_role) "
+        "SELECT :user_id, id_role "
+        "FROM roles "
+        "WHERE name = 'Клиент'"
+    );
+    roleQuery.bindValue(":user_id", userId);
+
+    if (!roleQuery.exec() || roleQuery.numRowsAffected() != 1)
+    {
+        errorText = "Не удалось назначить роль клиента. Проверьте наличие роли «Клиент» в таблице roles";
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery clientQuery(db);
+    clientQuery.prepare(
+        "INSERT INTO clients (id_user, name, address, phone, requisites, contact_person) "
+        "VALUES (:user_id, :name, :address, :phone, :requisites, :contact_person)"
+    );
+    clientQuery.bindValue(":user_id", userId);
+    clientQuery.bindValue(":name", organizationName.trimmed());
+    clientQuery.bindValue(":address", address.trimmed());
+    clientQuery.bindValue(":phone", phone.trimmed());
+    clientQuery.bindValue(":requisites", requisites.trimmed());
+    clientQuery.bindValue(":contact_person", contactPerson.trimmed());
+
+    if (!clientQuery.exec())
+    {
+        errorText = clientQuery.lastError().text();
+        if (errorText.contains("clients_phone_key"))
+            errorText = "Клиент с таким телефоном уже существует";
+        else if (errorText.contains("clients_requisites_key"))
+            errorText = "Клиент с такими реквизитами уже существует";
+        else if (errorText.contains("clients_name_address_key"))
+            errorText = "Клиент с таким названием и адресом уже существует";
+
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit())
+    {
+        errorText = db.lastError().text();
+        return false;
+    }
+
+    return true;
+}
+
+
 QString DatabaseManager::getTable(const QString& tableKey)
 {
     const auto configs = tableConfigs();

@@ -21,28 +21,32 @@ public:
                           int& userId,
                           int& clientId);
 
-    static QString getTable(const QString& tableKey);
+    static bool registerClient(const QString& login,
+                               const QString& password,
+                               const QString& organizationName,
+                               const QString& address,
+                               const QString& phone,
+                               const QString& requisites,
+                               const QString& contactPerson,
+                               QString& errorText);
 
+    static QString getTable(const QString& tableKey);
     static bool addTableRow(const QString& tableKey,
                             const QStringList& values,
                             QString& errorText);
-
     static bool updateTableRow(const QString& tableKey,
                                const QStringList& pkValues,
                                const QStringList& values,
                                QString& errorText);
-
     static bool deleteTableRow(const QString& tableKey,
                                const QStringList& pkValues,
                                QString& errorText);
 
     static QString getFreeSpaces(const QString& startDate,
                                  const QString& endDate);
-
     static QString getClientContracts(int clientId);
     static QString getClientPayments(int clientId);
     static QString getClientProfile(int clientId);
-
     static bool updateClientProfile(int clientId,
                                     const QString& name,
                                     const QString& address,
@@ -50,17 +54,14 @@ public:
                                     const QString& requisites,
                                     const QString& contactPerson,
                                     QString& errorText);
-
     static bool changePassword(int userId,
                                const QString& newPassword,
                                QString& errorText);
-
     static bool createContract(int clientId,
                                int spaceId,
                                const QString& startDate,
                                const QString& endDate,
                                QString& errorText);
-
     static bool addPayment(int contractId,
                            int spaceId,
                            const QString& paymentDate,
@@ -70,7 +71,6 @@ public:
 private:
     static bool tryOpenPsql();
     static bool tryOpenOdbc();
-
     static QString hashPassword(const QString& password);
     static QString encodeValue(const QString& value);
 

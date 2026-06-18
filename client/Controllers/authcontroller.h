@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 #include "../Models/user.h"
 
@@ -15,6 +16,14 @@ public:
 
     void login(const QString& login, const QString& password);
 
+    void registerClient(const QString& login,
+                        const QString& password,
+                        const QString& organizationName,
+                        const QString& address,
+                        const QString& phone,
+                        const QString& requisites,
+                        const QString& contactPerson);
+
 private:
     explicit AuthController(QObject* parent = nullptr);
     QString encodeValue(const QString& value) const;
@@ -26,6 +35,9 @@ private slots:
 signals:
     void loginSuccess(const User& user);
     void loginFailed(const QString& errorText);
+
+    void registrationSuccess();
+    void registrationFailed(const QString& errorText);
 };
 
 #endif // AUTHCONTROLLER_H

@@ -33,6 +33,26 @@ void AuthController::login(const QString& login, const QString& password)
     );
 }
 
+void AuthController::registerClient(const QString& login,
+                                    const QString& password,
+                                    const QString& organizationName,
+                                    const QString& address,
+                                    const QString& phone,
+                                    const QString& requisites,
+                                    const QString& contactPerson)
+{
+    SingletonClient::getInstance()->sendMessageToServer(
+        "register_client&" +
+        encodeValue(login) + "&" +
+        encodeValue(password) + "&" +
+        encodeValue(organizationName) + "&" +
+        encodeValue(address) + "&" +
+        encodeValue(phone) + "&" +
+        encodeValue(requisites) + "&" +
+        encodeValue(contactPerson)
+    );
+}
+
 void AuthController::handleServerMessage(const QString& message)
 {
     if (message.startsWith("OK&"))
@@ -45,6 +65,19 @@ void AuthController::handleServerMessage(const QString& message)
             const int clientId = parts[3].toInt();
             emit loginSuccess(User(userId, clientId, role));
         }
+        return;
+    }
+
+    if (message == "REGISTRATION_OK")
+    {
+        emit registrationSuccess();
+        return;
+    }
+
+    if (message.startsWith("REGISTRATION_ERROR&"))
+    {
+        QStringList parts = message.split("&");
+        emit registrationFailed(parts.size() > 1 ? decodeValue(parts.mid(1).join("&")) : "Ошибка регистрации");
         return;
     }
 
