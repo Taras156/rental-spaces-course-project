@@ -1,5 +1,6 @@
 #include "adminwindow.h"
 #include "admintablewindow.h"
+#include "financereportwindow.h"
 #include "../Controllers/admincontroller.h"
 #include "../Network/singletonclient.h"
 #include "../Styles/thememanager.h"
@@ -119,12 +120,15 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
 
     QGridLayout* actionGrid = addGroup(QString::fromUtf8("Быстрые действия"));
     QPushButton* createContractButton = makeButton(QString::fromUtf8("Оформить договор аренды"), QString::fromUtf8("Создать договор и привязать одну торговую точку к периоду аренды"));
-    QPushButton* addPaymentButton = makeButton(QString::fromUtf8("Добавить платеж"), QString::fromUtf8("Внести платеж по договору и торговой точке"));
+    QPushButton* addPaymentButton = makeButton(QString::fromUtf8("Добавить платеж"), QString::fromUtf8("Внести ежемесячный платеж по договору и торговой точке"));
+    QPushButton* financeReportButton = makeButton(QString::fromUtf8("Финансовый отчет"), QString::fromUtf8("Показать начисления, оплаты и задолженность по месяцам"));
     actionGrid->addWidget(createContractButton, 0, 0);
     actionGrid->addWidget(addPaymentButton, 0, 1);
+    actionGrid->addWidget(financeReportButton, 1, 0, 1, 2);
 
     connect(createContractButton, &QPushButton::clicked, this, &AdminWindow::showCreateContractDialog);
     connect(addPaymentButton, &QPushButton::clicked, this, &AdminWindow::showAddPaymentDialog);
+    connect(financeReportButton, &QPushButton::clicked, this, &AdminWindow::showFinanceReport);
 
     contentLayout->addStretch();
     scrollArea->setWidget(content);
@@ -158,6 +162,14 @@ void AdminWindow::toggleTheme()
 void AdminWindow::openTable(const QString& tableKey, const QString& title)
 {
     AdminTableWindow* window = new AdminTableWindow(tableKey, title);
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    window->show();
+}
+
+
+void AdminWindow::showFinanceReport()
+{
+    FinanceReportWindow* window = new FinanceReportWindow(this);
     window->setAttribute(Qt::WA_DeleteOnClose);
     window->show();
 }

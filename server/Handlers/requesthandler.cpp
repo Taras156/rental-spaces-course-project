@@ -80,6 +80,17 @@ QString RequestHandler::processRequest(const QString& request,
     if (currentRole.isEmpty())
         return "ACCESS_DENIED&Сначала выполните вход в систему";
 
+
+    if (command == "get_finance_report")
+    {
+        if (!isAdmin(currentRole))
+            return "ACCESS_DENIED&" + encodeValue("Финансовый отчет доступен только администратору");
+        if (parts.size() != 3)
+            return "ERROR&" + encodeValue("Неверный формат команды get_finance_report");
+
+        return DatabaseManager::getFinanceReport(decodePart(parts[1]), decodePart(parts[2]));
+    }
+
     if (command == "get_table")
     {
         if (!isAdmin(currentRole))

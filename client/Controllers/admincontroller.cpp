@@ -63,3 +63,10 @@ void AdminController::addPayment(int contractId, int spaceId, const QString& pay
         "add_payment&" + QString::number(contractId) + "&" + QString::number(spaceId) + "&" + encodeValue(paymentDate) + "&" + encodeValue(amount)
     );
 }
+
+void AdminController::loadFinanceReport(const QString& startDate, const QString& endDate)
+{
+    SingletonClient::getInstance()->sendMessageToServer(
+        "get_finance_report&" + encodeValue(startDate) + "&" + encodeValue(endDate)
+    );
+}

@@ -6,6 +6,7 @@
 #include <QRegularExpression>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QSet>
 #include <QSqlRecord>
 #include <QUrl>
 #include <QVariant>
@@ -478,6 +479,136 @@ QString DatabaseManager::getFreeSpaces(const QString& startDate,
             + ";" + query.value(4).toString();
     }
     return result;
+}
+
+
+QString DatabaseManager::getFinanceReport(const QString& startDate,
+                                          const QString& endDate)
+{
+    QDate start = QDate::fromString(startDate, "yyyy-MM-dd");
+    QDate end = QDate::fromString(endDate, "yyyy-MM-dd");
+
+    if (!start.isValid() || !end.isValid() || start > end)
+        return "ERROR&" + encodeValue("Некорректный период финансового отчета");
+
+    QSqlQuery query(db);
+    query.prepare(R"SQL(
+        WITH report_months AS (
+            SELECT generate_series(
+                date_trunc('month', CAST(:start_date AS date)),
+                date_trunc('month', CAST(:end_date AS date)),
+                interval '1 month'
+            )::date AS month_start
+        )
+        SELECT
+            to_char(rm.month_start, 'MM.YYYY') AS report_month,
+            c.name AS client_name,
+            rc.id_contract,
+            rs.id_space,
+            sp.floor_number,
+            sp.area,
+            sp.rent_price_per_day AS monthly_rent,
+            COALESCE(SUM(p.payment_amount), 0) AS paid_amount,
+            sp.rent_price_per_day - COALESCE(SUM(p.payment_amount), 0) AS debt,
+            CASE
+                WHEN COALESCE(SUM(p.payment_amount), 0) > sp.rent_price_per_day THEN 'Переплата'
+                WHEN COALESCE(SUM(p.payment_amount), 0) = sp.rent_price_per_day THEN 'Оплачено'
+                WHEN COALESCE(SUM(p.payment_amount), 0) = 0 THEN 'Не оплачено'
+                ELSE 'Частично оплачено'
+            END AS payment_status
+        FROM report_months rm
+        JOIN rented_spaces rs
+          ON rs.start_date <= (rm.month_start + interval '1 month' - interval '1 day')::date
+         AND rs.end_date >= rm.month_start
+        JOIN rental_contracts rc ON rc.id_contract = rs.id_contract
+        JOIN clients c ON c.id_client = rc.id_client
+        JOIN retail_spaces sp ON sp.id_space = rs.id_space
+        LEFT JOIN payments p
+          ON p.id_contract = rs.id_contract
+         AND p.id_space = rs.id_space
+         AND p.payment_date >= rm.month_start
+         AND p.payment_date < (rm.month_start + interval '1 month')::date
+        GROUP BY
+            rm.month_start,
+            c.name,
+            rc.id_contract,
+            rs.id_space,
+            sp.floor_number,
+            sp.area,
+            sp.rent_price_per_day
+        ORDER BY
+            rm.month_start,
+            c.name,
+            rc.id_contract,
+            rs.id_space
+    )SQL");
+
+    query.bindValue(":start_date", startDate);
+    query.bindValue(":end_date", endDate);
+
+    if (!query.exec())
+    {
+        qDebug() << "Finance report error:" << query.lastError().text();
+        return "ERROR&" + encodeValue(query.lastError().text());
+    }
+
+    double totalPlanned = 0.0;
+    double totalPaid = 0.0;
+    double totalDebt = 0.0;
+    double rentedArea = 0.0;
+    QSet<int> contractIds;
+    QSet<int> spaceIds;
+
+    QString rows;
+    while (query.next())
+    {
+        const int contractId = query.value("id_contract").toInt();
+        const int spaceId = query.value("id_space").toInt();
+        const double area = query.value("area").toDouble();
+        const double monthlyRent = query.value("monthly_rent").toDouble();
+        const double paid = query.value("paid_amount").toDouble();
+        const double debt = query.value("debt").toDouble();
+
+        totalPlanned += monthlyRent;
+        totalPaid += paid;
+        totalDebt += debt;
+        contractIds.insert(contractId);
+
+        if (!spaceIds.contains(spaceId))
+        {
+            rentedArea += area;
+            spaceIds.insert(spaceId);
+        }
+
+        QStringList values;
+        values << encodeValue(query.value("report_month").toString());
+        values << encodeValue(query.value("client_name").toString());
+        values << QString::number(contractId);
+        values << QString::number(spaceId);
+        values << QString::number(query.value("floor_number").toInt());
+        values << QString::number(area, 'f', 2);
+        values << QString::number(monthlyRent, 'f', 2);
+        values << QString::number(paid, 'f', 2);
+        values << QString::number(debt, 'f', 2);
+        values << encodeValue(query.value("payment_status").toString());
+
+        rows += "|" + values.join(";");
+    }
+
+    const double percent = totalPlanned > 0.0 ? (totalPaid / totalPlanned) * 100.0 : 0.0;
+
+    QString headers = QString::fromUtf8(
+        "Месяц;Клиент;Договор;Точка;Этаж;Площадь м²;Начислено за месяц;Оплачено за месяц;Долг;Статус"
+    );
+
+    return "FINANCE_REPORT&"
+        + QString::number(totalPlanned, 'f', 2) + "&"
+        + QString::number(totalPaid, 'f', 2) + "&"
+        + QString::number(totalDebt, 'f', 2) + "&"
+        + QString::number(percent, 'f', 2) + "&"
+        + QString::number(contractIds.size()) + "&"
+        + QString::number(rentedArea, 'f', 2) + "&"
+        + headers + rows;
 }
 
 QString DatabaseManager::getClientContracts(int clientId)

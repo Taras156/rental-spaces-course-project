@@ -47,6 +47,8 @@ public:
     static QString getClientContracts(int clientId);
     static QString getClientPayments(int clientId);
     static QString getClientProfile(int clientId);
+    static QString getFinanceReport(const QString& startDate,
+                                    const QString& endDate);
     static bool updateClientProfile(int clientId,
                                     const QString& name,
                                     const QString& address,

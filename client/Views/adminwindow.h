@@ -17,6 +17,7 @@ private slots:
     void openTable(const QString& tableKey, const QString& title);
     void showCreateContractDialog();
     void showAddPaymentDialog();
+    void showFinanceReport();
     void toggleTheme();
 
 private:

@@ -20,6 +20,7 @@ SOURCES += \
     Views/authwindow.cpp \
     Views/adminwindow.cpp \
     Views/admintablewindow.cpp \
+    Views/financereportwindow.cpp \
     Views/clientwindow.cpp
 
 HEADERS += \
@@ -36,4 +37,5 @@ HEADERS += \
     Views/authwindow.h \
     Views/adminwindow.h \
     Views/admintablewindow.h \
+    Views/financereportwindow.h \
     Views/clientwindow.h

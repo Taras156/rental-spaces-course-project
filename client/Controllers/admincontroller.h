@@ -18,6 +18,7 @@ public:
     void deleteRow(const QString& tableKey, const QStringList& pkValues);
     void createContract(int clientId, int spaceId, const QString& startDate, const QString& endDate);
     void addPayment(int contractId, int spaceId, const QString& paymentDate, const QString& amount);
+    void loadFinanceReport(const QString& startDate, const QString& endDate);
 
 private:
     explicit AdminController(QObject* parent = nullptr);
