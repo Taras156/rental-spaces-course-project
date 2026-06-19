@@ -60,7 +60,7 @@ public:
                                const QString& newPassword,
                                QString& errorText);
     static bool createContract(int clientId,
-                               int spaceId,
+                               const QStringList& spaceIds,
                                const QString& startDate,
                                const QString& endDate,
                                QString& errorText);

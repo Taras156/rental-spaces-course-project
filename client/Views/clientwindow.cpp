@@ -2,6 +2,7 @@
 #include "../Controllers/clientcontroller.h"
 #include "../Network/singletonclient.h"
 #include "../Styles/thememanager.h"
+#include "../Styles/themetoggleswitch.h"
 
 #include <QAbstractItemView>
 #include <QApplication>
@@ -41,24 +42,16 @@ void ClientWindow::setupUi()
     QLabel* titleLabel = new QLabel(QString::fromUtf8("Личный кабинет арендатора"), this);
     titleLabel->setObjectName("MainTitle");
 
-    QLabel* subtitleLabel = new QLabel(
-        QString::fromUtf8("Просмотр свободных торговых точек, договоров, платежей и изменение регистрационных данных."),
-        this);
-    subtitleLabel->setObjectName("HintLabel");
-    subtitleLabel->setWordWrap(true);
-
     titleBlock->addWidget(titleLabel);
-    titleBlock->addWidget(subtitleLabel);
 
     QVBoxLayout* actionsBlock = new QVBoxLayout();
-    themeButton = new QPushButton(this);
-    themeButton->setMinimumHeight(40);
-    updateThemeButton();
+    themeSwitch = new ThemeToggleSwitch(this);
+    updateThemeSwitch();
 
     QPushButton* refreshButton = new QPushButton(QString::fromUtf8("Обновить данные"), this);
     refreshButton->setMinimumHeight(40);
 
-    actionsBlock->addWidget(themeButton);
+    actionsBlock->addWidget(themeSwitch);
     actionsBlock->addWidget(refreshButton);
     actionsBlock->addStretch();
 
@@ -191,22 +184,22 @@ void ClientWindow::setupUi()
     connect(refreshButton, &QPushButton::clicked, this, &ClientWindow::refreshAll);
     connect(saveProfileButton, &QPushButton::clicked, this, &ClientWindow::saveProfile);
     connect(changePasswordButton, &QPushButton::clicked, this, &ClientWindow::changePassword);
-    connect(themeButton, &QPushButton::clicked, this, &ClientWindow::toggleTheme);
+    connect(themeSwitch, &ThemeToggleSwitch::clicked, this, &ClientWindow::toggleTheme);
 
     setWindowTitle(QString::fromUtf8("Личный кабинет арендатора"));
     resize(1080, 720);
 }
 
-void ClientWindow::updateThemeButton()
+void ClientWindow::updateThemeSwitch()
 {
-    if (themeButton)
-        themeButton->setText(ThemeManager::switchButtonText());
+    if (themeSwitch)
+        themeSwitch->setChecked(ThemeManager::currentTheme() == ThemeManager::Theme9_SkyLight);
 }
 
 void ClientWindow::toggleTheme()
 {
     ThemeManager::toggleTheme(qApp);
-    updateThemeButton();
+    updateThemeSwitch();
 }
 
 QString ClientWindow::decodeValue(const QString& value) const

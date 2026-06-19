@@ -16,7 +16,7 @@ public:
     void addRow(const QString& tableKey, const QStringList& values);
     void updateRow(const QString& tableKey, const QStringList& pkValues, const QStringList& values);
     void deleteRow(const QString& tableKey, const QStringList& pkValues);
-    void createContract(int clientId, int spaceId, const QString& startDate, const QString& endDate);
+    void createContract(int clientId, const QStringList& spaceIds, const QString& startDate, const QString& endDate);
     void addPayment(int contractId, int spaceId, const QString& paymentDate, const QString& amount);
     void loadFinanceReport(const QString& startDate, const QString& endDate);
 

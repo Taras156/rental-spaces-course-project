@@ -232,11 +232,19 @@ QString RequestHandler::processRequest(const QString& request,
     {
         if (!isAdmin(currentRole))
             return "ACCESS_DENIED&Оформлять договоры может только администратор";
-        if (parts.size() != 5)
+        if (parts.size() < 5)
             return "ERROR&Неверный формат команды create_contract";
 
+        QStringList spaceIds;
+        for (int i = 4; i < parts.size(); ++i)
+            spaceIds << decodePart(parts[i]);
+
         QString errorText;
-        bool ok = DatabaseManager::createContract(parts[1].toInt(), parts[2].toInt(), decodePart(parts[3]), decodePart(parts[4]), errorText);
+        bool ok = DatabaseManager::createContract(parts[1].toInt(),
+                                                  spaceIds,
+                                                  decodePart(parts[2]),
+                                                  decodePart(parts[3]),
+                                                  errorText);
         return ok ? "CONTRACT_CREATED" : "ERROR&" + encodeValue(errorText);
     }
 

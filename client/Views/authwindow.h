@@ -6,6 +6,8 @@
 #include <QMainWindow>
 #include <QPushButton>
 
+class ThemeToggleSwitch;
+
 #include "../Models/user.h"
 
 class AuthWindow : public QMainWindow
@@ -26,14 +28,14 @@ private slots:
 
 private:
     void setupUi();
-    void updateThemeButton();
+    void updateThemeSwitch();
 
 private:
     QLineEdit* loginEdit;
     QLineEdit* passwordEdit;
     QPushButton* loginButton;
     QPushButton* registrationButton;
-    QPushButton* themeButton;
+    ThemeToggleSwitch* themeSwitch;
     QLabel* statusLabel;
 };
 

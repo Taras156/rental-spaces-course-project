@@ -50,11 +50,14 @@ void AdminController::deleteRow(const QString& tableKey, const QStringList& pkVa
     SingletonClient::getInstance()->sendMessageToServer(request);
 }
 
-void AdminController::createContract(int clientId, int spaceId, const QString& startDate, const QString& endDate)
+void AdminController::createContract(int clientId, const QStringList& spaceIds, const QString& startDate, const QString& endDate)
 {
-    SingletonClient::getInstance()->sendMessageToServer(
-        "create_contract&" + QString::number(clientId) + "&" + QString::number(spaceId) + "&" + encodeValue(startDate) + "&" + encodeValue(endDate)
-    );
+    QString request = "create_contract&" + QString::number(clientId) + "&" + encodeValue(startDate) + "&" + encodeValue(endDate);
+
+    for (const QString& spaceId : spaceIds)
+        request += "&" + encodeValue(spaceId);
+
+    SingletonClient::getInstance()->sendMessageToServer(request);
 }
 
 void AdminController::addPayment(int contractId, int spaceId, const QString& paymentDate, const QString& amount)

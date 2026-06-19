@@ -4,6 +4,7 @@
 #include "../Controllers/admincontroller.h"
 #include "../Network/singletonclient.h"
 #include "../Styles/thememanager.h"
+#include "../Styles/themetoggleswitch.h"
 
 #include <QApplication>
 #include <QDate>
@@ -17,6 +18,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QRegularExpression>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSpinBox>
@@ -39,38 +42,13 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
 
     QLabel* titleLabel = new QLabel(QString::fromUtf8("Административный центр"), this);
     titleLabel->setObjectName("MainTitle");
-
-    QLabel* hintLabel = new QLabel(
-        QString::fromUtf8("Управление клиентами, торговыми точками, договорами аренды, платежами и правами доступа."),
-        this);
-    hintLabel->setObjectName("HintLabel");
-    hintLabel->setWordWrap(true);
-
     titleBlock->addWidget(titleLabel);
-    titleBlock->addWidget(hintLabel);
 
-    QVBoxLayout* sideBlock = new QVBoxLayout();
-    QLabel* roleLabel = new QLabel(QString::fromUtf8("Роль: администратор"), this);
-    roleLabel->setObjectName("SectionTitle");
+    ThemeToggleSwitch* themeSwitch = new ThemeToggleSwitch(this);
+    connect(themeSwitch, &ThemeToggleSwitch::clicked, this, &AdminWindow::toggleTheme);
 
-    QLabel* roleHint = new QLabel(
-        QString::fromUtf8("Доступны операции CRUD, оформление договоров и внесение ежемесячных платежей."),
-        this);
-    roleHint->setObjectName("HintLabel");
-    roleHint->setWordWrap(true);
-
-    QPushButton* themeButton = new QPushButton(ThemeManager::switchButtonText(), this);
-    themeButton->setMinimumHeight(40);
-    connect(themeButton, &QPushButton::clicked, this, &AdminWindow::toggleTheme);
-
-    sideBlock->addWidget(roleLabel);
-    sideBlock->addWidget(roleHint);
-    sideBlock->addWidget(themeButton, 0, Qt::AlignLeft);
-    sideBlock->addStretch();
-
-    headerLayout->addLayout(titleBlock, 3);
-    headerLayout->addSpacing(12);
-    headerLayout->addLayout(sideBlock, 2);
+    headerLayout->addLayout(titleBlock, 1);
+    headerLayout->addWidget(themeSwitch, 0, Qt::AlignTop | Qt::AlignRight);
 
     mainLayout->addLayout(headerLayout);
 
@@ -119,7 +97,7 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
     addTableButton(usersGrid, 1, 0, QString::fromUtf8("Пользователи — роли"), "users_roles", QString::fromUtf8("Пользователи — роли"), QString::fromUtf8("Назначение ролей пользователям"));
 
     QGridLayout* actionGrid = addGroup(QString::fromUtf8("Быстрые действия"));
-    QPushButton* createContractButton = makeButton(QString::fromUtf8("Оформить договор аренды"), QString::fromUtf8("Создать договор и привязать одну торговую точку к периоду аренды"));
+    QPushButton* createContractButton = makeButton(QString::fromUtf8("Оформить договор аренды"), QString::fromUtf8("Создать один договор и привязать к нему несколько торговых точек"));
     QPushButton* addPaymentButton = makeButton(QString::fromUtf8("Добавить платеж"), QString::fromUtf8("Внести ежемесячный платеж по договору и торговой точке"));
     QPushButton* financeReportButton = makeButton(QString::fromUtf8("Финансовый отчет"), QString::fromUtf8("Показать начисления, оплаты и задолженность по месяцам"));
     actionGrid->addWidget(createContractButton, 0, 0);
@@ -136,7 +114,7 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
 
     connect(SingletonClient::getInstance(), &SingletonClient::messageFromServer, this, [this](const QString& message) {
         if (message == "CONTRACT_CREATED")
-            QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Договор аренды создан."));
+            QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Договор аренды создан. К нему привязаны выбранные торговые точки."));
         else if (message == "PAYMENT_ADDED")
             QMessageBox::information(this, QString::fromUtf8("Готово"), QString::fromUtf8("Платеж добавлен."));
         else if (message.startsWith("ERROR&") || message.startsWith("ACCESS_DENIED&"))
@@ -151,12 +129,9 @@ void AdminWindow::toggleTheme()
 {
     ThemeManager::toggleTheme(qApp);
 
-    const auto buttons = findChildren<QPushButton*>();
-    for (QPushButton* button : buttons)
-    {
-        if (button->text().contains(QString::fromUtf8("Переключить на тему")))
-            button->setText(ThemeManager::switchButtonText());
-    }
+    const auto switches = findChildren<ThemeToggleSwitch*>();
+    for (ThemeToggleSwitch* themeSwitch : switches)
+        themeSwitch->setChecked(ThemeManager::currentTheme() == ThemeManager::Theme9_SkyLight);
 }
 
 void AdminWindow::openTable(const QString& tableKey, const QString& title)
@@ -178,12 +153,17 @@ void AdminWindow::showCreateContractDialog()
 {
     QDialog dialog(this);
     dialog.setWindowTitle(QString::fromUtf8("Оформление договора аренды"));
-    dialog.resize(460, 260);
+    dialog.resize(620, 440);
 
     QVBoxLayout* rootLayout = new QVBoxLayout(&dialog);
     QLabel* title = new QLabel(QString::fromUtf8("Создание договора аренды"), &dialog);
     title->setObjectName("SectionTitle");
-    QLabel* note = new QLabel(QString::fromUtf8("Укажите ID клиента, ID торговой точки и период аренды."), &dialog);
+
+    QLabel* note = new QLabel(
+        QString::fromUtf8("Укажите ID клиента, период аренды и несколько ID торговых точек. "
+                          "Будет создан один договор, а каждая выбранная точка попадет в таблицу «Арендуемые торговые точки»."),
+        &dialog
+    );
     note->setObjectName("HintLabel");
     note->setWordWrap(true);
 
@@ -195,26 +175,47 @@ void AdminWindow::showCreateContractDialog()
     form->setVerticalSpacing(12);
 
     QSpinBox* clientIdEdit = new QSpinBox(&dialog);
-    QSpinBox* spaceIdEdit = new QSpinBox(&dialog);
     QDateEdit* startDateEdit = new QDateEdit(QDate::currentDate(), &dialog);
     QDateEdit* endDateEdit = new QDateEdit(QDate::currentDate().addMonths(1), &dialog);
+    QLineEdit* spaceIdsEdit = new QLineEdit(&dialog);
+    QPlainTextEdit* helpText = new QPlainTextEdit(&dialog);
 
     clientIdEdit->setRange(1, 1000000);
-    spaceIdEdit->setRange(1, 1000000);
     startDateEdit->setCalendarPopup(true);
     endDateEdit->setCalendarPopup(true);
     startDateEdit->setDisplayFormat("yyyy-MM-dd");
     endDateEdit->setDisplayFormat("yyyy-MM-dd");
 
+    spaceIdsEdit->setPlaceholderText(QString::fromUtf8("Например: 231, 232, 233"));
+
+    helpText->setReadOnly(true);
+    helpText->setMaximumHeight(95);
+    helpText->setPlainText(QString::fromUtf8(
+        "Как заполнять:\n"
+        "1) сначала выберите клиента;\n"
+        "2) укажите период аренды;\n"
+        "3) введите ID свободных торговых точек через запятую, пробел или точку с запятой.\n"
+        "Пример: 231, 232, 233"
+    ));
+
     form->addRow(QString::fromUtf8("ID клиента:"), clientIdEdit);
-    form->addRow(QString::fromUtf8("ID торговой точки:"), spaceIdEdit);
     form->addRow(QString::fromUtf8("Дата начала:"), startDateEdit);
     form->addRow(QString::fromUtf8("Дата окончания:"), endDateEdit);
+    form->addRow(QString::fromUtf8("ID торговых точек:"), spaceIdsEdit);
 
     rootLayout->addLayout(form);
+    rootLayout->addWidget(helpText);
+
+    QLabel* warning = new QLabel(
+        QString::fromUtf8("Важно: если хотя бы одна точка занята в выбранный период, договор не будет создан."),
+        &dialog
+    );
+    warning->setObjectName("HintLabel");
+    warning->setWordWrap(true);
+    rootLayout->addWidget(warning);
 
     QDialogButtonBox* box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    box->button(QDialogButtonBox::Ok)->setText(QString::fromUtf8("Создать"));
+    box->button(QDialogButtonBox::Ok)->setText(QString::fromUtf8("Создать договор"));
     box->button(QDialogButtonBox::Cancel)->setText(QString::fromUtf8("Отмена"));
     connect(box, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(box, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
@@ -222,7 +223,47 @@ void AdminWindow::showCreateContractDialog()
 
     if (dialog.exec() == QDialog::Accepted)
     {
-        AdminController::instance()->createContract(clientIdEdit->value(), spaceIdEdit->value(),
+        if (startDateEdit->date() > endDateEdit->date())
+        {
+            QMessageBox::warning(this, QString::fromUtf8("Ошибка"),
+                                 QString::fromUtf8("Дата начала не может быть позже даты окончания."));
+            return;
+        }
+
+        QString rawText = spaceIdsEdit->text().trimmed();
+        if (rawText.isEmpty())
+        {
+            QMessageBox::warning(this, QString::fromUtf8("Ошибка"),
+                                 QString::fromUtf8("Введите хотя бы одну торговую точку."));
+            return;
+        }
+
+        QStringList spaceIds = rawText.split(QRegularExpression("[,;\\s]+"), Qt::SkipEmptyParts);
+        QStringList normalizedIds;
+        QSet<QString> uniqueIds;
+
+        for (const QString& value : spaceIds)
+        {
+            bool ok = false;
+            int id = value.toInt(&ok);
+
+            if (!ok || id <= 0)
+            {
+                QMessageBox::warning(this, QString::fromUtf8("Ошибка"),
+                                     QString::fromUtf8("Некорректный ID торговой точки: ") + value);
+                return;
+            }
+
+            QString idText = QString::number(id);
+            if (!uniqueIds.contains(idText))
+            {
+                uniqueIds.insert(idText);
+                normalizedIds << idText;
+            }
+        }
+
+        AdminController::instance()->createContract(clientIdEdit->value(),
+                                                    normalizedIds,
                                                     startDateEdit->date().toString("yyyy-MM-dd"),
                                                     endDateEdit->date().toString("yyyy-MM-dd"));
     }

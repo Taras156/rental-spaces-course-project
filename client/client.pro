@@ -17,6 +17,7 @@ SOURCES += \
     Models/contractinfo.cpp \
     Models/paymentinfo.cpp \
     Styles/thememanager.cpp \
+    Styles/themetoggleswitch.cpp \
     Views/authwindow.cpp \
     Views/adminwindow.cpp \
     Views/admintablewindow.cpp \
@@ -34,6 +35,7 @@ HEADERS += \
     Models/contractinfo.h \
     Models/paymentinfo.h \
     Styles/thememanager.h \
+    Styles/themetoggleswitch.h \
     Views/authwindow.h \
     Views/adminwindow.h \
     Views/admintablewindow.h \

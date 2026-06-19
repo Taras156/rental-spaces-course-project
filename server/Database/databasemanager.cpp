@@ -746,15 +746,103 @@ bool DatabaseManager::changePassword(int userId,
 }
 
 bool DatabaseManager::createContract(int clientId,
-                                     int spaceId,
+                                     const QStringList& spaceIds,
                                      const QString& startDate,
                                      const QString& endDate,
                                      QString& errorText)
 {
+    if (spaceIds.isEmpty())
+    {
+        errorText = "Выберите хотя бы одну торговую точку";
+        return false;
+    }
+
+    QDate start = QDate::fromString(startDate, "yyyy-MM-dd");
+    QDate end = QDate::fromString(endDate, "yyyy-MM-dd");
+
+    if (!start.isValid() || !end.isValid() || start > end)
+    {
+        errorText = "Некорректный период аренды";
+        return false;
+    }
+
     if (!db.transaction())
     {
         errorText = db.lastError().text();
         return false;
+    }
+
+    QSqlQuery clientCheck(db);
+    clientCheck.prepare("SELECT COUNT(*) FROM clients WHERE id_client = :client_id");
+    clientCheck.bindValue(":client_id", clientId);
+
+    if (!clientCheck.exec() || !clientCheck.next() || clientCheck.value(0).toInt() == 0)
+    {
+        errorText = "Клиент с указанным ID не найден";
+        db.rollback();
+        return false;
+    }
+
+    QSet<int> uniqueSpaceIds;
+    for (const QString& value : spaceIds)
+    {
+        bool ok = false;
+        int spaceId = value.toInt(&ok);
+
+        if (!ok || spaceId <= 0)
+        {
+            errorText = "Некорректный ID торговой точки: " + value;
+            db.rollback();
+            return false;
+        }
+
+        if (uniqueSpaceIds.contains(spaceId))
+        {
+            errorText = "Одна и та же торговая точка указана несколько раз: " + QString::number(spaceId);
+            db.rollback();
+            return false;
+        }
+
+        uniqueSpaceIds.insert(spaceId);
+    }
+
+    for (int spaceId : uniqueSpaceIds)
+    {
+        QSqlQuery spaceCheck(db);
+        spaceCheck.prepare("SELECT COUNT(*) FROM retail_spaces WHERE id_space = :space_id");
+        spaceCheck.bindValue(":space_id", spaceId);
+
+        if (!spaceCheck.exec() || !spaceCheck.next() || spaceCheck.value(0).toInt() == 0)
+        {
+            errorText = "Торговая точка с ID " + QString::number(spaceId) + " не найдена";
+            db.rollback();
+            return false;
+        }
+
+        QSqlQuery busyCheck(db);
+        busyCheck.prepare(
+            "SELECT COUNT(*) "
+            "FROM rented_spaces "
+            "WHERE id_space = :space_id "
+            "AND daterange(start_date, end_date, '[]') && daterange(CAST(:start_date AS date), CAST(:end_date AS date), '[]')"
+        );
+        busyCheck.bindValue(":space_id", spaceId);
+        busyCheck.bindValue(":start_date", startDate);
+        busyCheck.bindValue(":end_date", endDate);
+
+        if (!busyCheck.exec() || !busyCheck.next())
+        {
+            errorText = busyCheck.lastError().text();
+            db.rollback();
+            return false;
+        }
+
+        if (busyCheck.value(0).toInt() > 0)
+        {
+            errorText = "Торговая точка " + QString::number(spaceId) + " уже занята в выбранный период";
+            db.rollback();
+            return false;
+        }
     }
 
     QSqlQuery contractQuery(db);
@@ -773,21 +861,24 @@ bool DatabaseManager::createContract(int clientId,
 
     int contractId = contractQuery.value(0).toInt();
 
-    QSqlQuery spaceQuery(db);
-    spaceQuery.prepare(
-        "INSERT INTO rented_spaces (id_contract, id_space, start_date, end_date) "
-        "VALUES (:contract_id, :space_id, :start_date, :end_date)"
-    );
-    spaceQuery.bindValue(":contract_id", contractId);
-    spaceQuery.bindValue(":space_id", spaceId);
-    spaceQuery.bindValue(":start_date", startDate);
-    spaceQuery.bindValue(":end_date", endDate);
-
-    if (!spaceQuery.exec())
+    for (int spaceId : uniqueSpaceIds)
     {
-        errorText = spaceQuery.lastError().text();
-        db.rollback();
-        return false;
+        QSqlQuery spaceQuery(db);
+        spaceQuery.prepare(
+            "INSERT INTO rented_spaces (id_contract, id_space, start_date, end_date) "
+            "VALUES (:contract_id, :space_id, :start_date, :end_date)"
+        );
+        spaceQuery.bindValue(":contract_id", contractId);
+        spaceQuery.bindValue(":space_id", spaceId);
+        spaceQuery.bindValue(":start_date", startDate);
+        spaceQuery.bindValue(":end_date", endDate);
+
+        if (!spaceQuery.exec())
+        {
+            errorText = spaceQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
     }
 
     if (!db.commit())

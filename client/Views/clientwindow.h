@@ -8,6 +8,8 @@
 #include <QTableWidget>
 #include <QTabWidget>
 
+class ThemeToggleSwitch;
+
 #include "../Models/user.h"
 
 class ClientWindow : public QMainWindow
@@ -29,7 +31,7 @@ private:
     void setupUi();
     QString decodeValue(const QString& value) const;
     void fillTable(QTableWidget* table, const QStringList& headers, const QList<QStringList>& rows);
-    void updateThemeButton();
+    void updateThemeSwitch();
 
 private:
     User m_user;
@@ -40,7 +42,7 @@ private:
     QTableWidget* paymentsTable;
     QDateEdit* startDateEdit;
     QDateEdit* endDateEdit;
-    QPushButton* themeButton;
+    ThemeToggleSwitch* themeSwitch;
 
     QLineEdit* nameEdit;
     QLineEdit* addressEdit;

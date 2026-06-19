@@ -35,9 +35,7 @@ QString ThemeManager::currentThemeName()
 
 QString ThemeManager::switchButtonText()
 {
-    if (s_currentTheme == Theme4_DarkBlue)
-        return QString::fromUtf8("Переключить на тему 9");
-    return QString::fromUtf8("Переключить на тему 4");
+    return QString::fromUtf8("◐");
 }
 
 QString ThemeManager::styleForTheme(Theme theme)
@@ -91,7 +89,7 @@ QString ThemeManager::styleForTheme(Theme theme)
             "}"
             "QPushButton:hover { background-color: #1EA7E1; }"
             "QPushButton:pressed { background-color: #0EA5E9; }"
-            "QPushButton:disabled { background-color: #CBD5E1; color: #F8FAFC; }"
+            "QPushButton:disabled { background-color: #CBD5E1; color: #F8FAFC; }""QPushButton#ThemeSwitchButton { min-width: 42px; max-width: 42px; min-height: 42px; max-height: 42px; padding: 0px; border-radius: 21px; font-size: 18px; font-weight: 700; background-color: #0EA5E9; color: #FFFFFF; }""QPushButton#ThemeSwitchButton:hover { background-color: #0284C7; }""QPushButton#ThemeSwitchButton:pressed { background-color: #0369A1; }"
             "QLineEdit, QDateEdit, QSpinBox, QComboBox, QTextEdit {"
             "  background-color: #FFFFFF;"
             "  color: #0F172A;"
@@ -195,7 +193,7 @@ QString ThemeManager::styleForTheme(Theme theme)
         "}"
         "QPushButton:hover { background-color: #2563EB; }"
         "QPushButton:pressed { background-color: #1D4ED8; }"
-        "QPushButton:disabled { background-color: #475569; color: #CBD5E1; }"
+        "QPushButton:disabled { background-color: #475569; color: #CBD5E1; }""QPushButton#ThemeSwitchButton { min-width: 42px; max-width: 42px; min-height: 42px; max-height: 42px; padding: 0px; border-radius: 21px; font-size: 18px; font-weight: 700; background-color: #1E40AF; color: #FFFFFF; }""QPushButton#ThemeSwitchButton:hover { background-color: #1D4ED8; }""QPushButton#ThemeSwitchButton:pressed { background-color: #1E3A8A; }"
         "QLineEdit, QDateEdit, QSpinBox, QComboBox, QTextEdit {"
         "  background-color: #F8FAFC;"
         "  color: #0F172A;"

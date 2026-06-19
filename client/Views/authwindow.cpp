@@ -4,6 +4,7 @@
 #include "../Controllers/authcontroller.h"
 #include "../Network/singletonclient.h"
 #include "../Styles/thememanager.h"
+#include "../Styles/themetoggleswitch.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -47,23 +48,17 @@ void AuthWindow::setupUi()
     QHBoxLayout* topLayout = new QHBoxLayout();
 
     QVBoxLayout* titleLayout = new QVBoxLayout();
-    QLabel* titleLabel = new QLabel(QString::fromUtf8("Система аренды торговых площадей"), this);
+    QLabel* titleLabel = new QLabel(QString::fromUtf8("Авторизация"), this);
     titleLabel->setObjectName("MainTitle");
 
-    QLabel* subLabel = new QLabel(QString::fromUtf8("Авторизация пользователя, регистрация арендатора и выбор темы интерфейса."), this);
-    subLabel->setObjectName("SoftText");
-    subLabel->setWordWrap(true);
-
     titleLayout->addWidget(titleLabel);
-    titleLayout->addWidget(subLabel);
 
-    themeButton = new QPushButton(this);
-    themeButton->setMinimumHeight(40);
-    connect(themeButton, &QPushButton::clicked, this, &AuthWindow::onThemeSwitchClicked);
-    updateThemeButton();
+    themeSwitch = new ThemeToggleSwitch(this);
+    connect(themeSwitch, &ThemeToggleSwitch::clicked, this, &AuthWindow::onThemeSwitchClicked);
+    updateThemeSwitch();
 
     topLayout->addLayout(titleLayout, 1);
-    topLayout->addWidget(themeButton, 0, Qt::AlignTop);
+    topLayout->addWidget(themeSwitch, 0, Qt::AlignTop);
 
     loginEdit = new QLineEdit(this);
     passwordEdit = new QLineEdit(this);
@@ -103,19 +98,19 @@ void AuthWindow::setupUi()
     connect(registrationButton, &QPushButton::clicked, this, &AuthWindow::onRegistrationClicked);
 
     setWindowTitle(QString::fromUtf8("Авторизация"));
-    resize(680, 340);
+    resize(620, 300);
 }
 
-void AuthWindow::updateThemeButton()
+void AuthWindow::updateThemeSwitch()
 {
-    if (themeButton)
-        themeButton->setText(ThemeManager::switchButtonText());
+    if (themeSwitch)
+        themeSwitch->setChecked(ThemeManager::currentTheme() == ThemeManager::Theme9_SkyLight);
 }
 
 void AuthWindow::onThemeSwitchClicked()
 {
     ThemeManager::toggleTheme(qApp);
-    updateThemeButton();
+    updateThemeSwitch();
 }
 
 void AuthWindow::onLoginClicked()
@@ -135,15 +130,7 @@ void AuthWindow::onRegistrationClicked()
     QLabel* titleLabel = new QLabel(QString::fromUtf8("Регистрация нового клиента"), &dialog);
     titleLabel->setObjectName("SectionTitle");
 
-    QLabel* hintLabel = new QLabel(
-        QString::fromUtf8("Заполните данные организации. После регистрации будет создана учетная запись с ролью «Клиент»."),
-        &dialog
-    );
-    hintLabel->setObjectName("HintLabel");
-    hintLabel->setWordWrap(true);
-
     rootLayout->addWidget(titleLabel);
-    rootLayout->addWidget(hintLabel);
 
     QFormLayout* form = new QFormLayout();
     form->setHorizontalSpacing(16);
