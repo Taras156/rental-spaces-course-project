@@ -44,3 +44,15 @@
 - `admin` / `Admin_123!`
 - `client_alpha` / `Client_123!`
 - `client_beta` / `Client_456!`
+
+## Обновление по ORM-подходу
+
+В клиентской части результаты запросов больше не хранятся как `QList<QStringList>`.
+Ответы сервера разбираются в специальные классы из слоя `Model`:
+
+- `FREE_SPACES` -> `QList<RetailSpace>`;
+- `CLIENT_CONTRACTS` -> `QList<ContractInfo>`;
+- `CLIENT_PAYMENTS` -> `QList<PaymentInfo>`;
+- `CLIENT_PROFILE` -> `Client`.
+
+После этого объекты моделей передаются во view-методы `showFreeSpaces`, `showContracts`, `showPayments`, `showClientProfile`, которые уже заполняют интерфейс. Это сделано без ORM-библиотек: SQL-запросы остаются явно прописанными через `QSqlQuery`, а результат запроса сохраняется в объектах специально разработанных классов.

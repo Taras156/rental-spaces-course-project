@@ -3,6 +3,7 @@
 
 #include <QDateEdit>
 #include <QLineEdit>
+#include <QList>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QTableWidget>
@@ -11,6 +12,10 @@
 class ThemeToggleSwitch;
 
 #include "../Models/user.h"
+#include "../Models/client.h"
+#include "../Models/contractinfo.h"
+#include "../Models/paymentinfo.h"
+#include "../Models/retailspace.h"
 
 class ClientWindow : public QMainWindow
 {
@@ -30,7 +35,17 @@ private slots:
 private:
     void setupUi();
     QString decodeValue(const QString& value) const;
-    void fillTable(QTableWidget* table, const QStringList& headers, const QList<QStringList>& rows);
+    QList<RetailSpace> parseFreeSpaces(const QString& message) const;
+    QList<ContractInfo> parseContracts(const QString& message) const;
+    QList<PaymentInfo> parsePayments(const QString& message) const;
+    Client parseClientProfile(const QString& message) const;
+
+    void showFreeSpaces(const QList<RetailSpace>& spaces);
+    void showContracts(const QList<ContractInfo>& contracts);
+    void showPayments(const QList<PaymentInfo>& payments);
+    void showClientProfile(const Client& client);
+
+    void setupTable(QTableWidget* table, const QStringList& headers, int rowCount);
     void updateThemeSwitch();
 
 private:

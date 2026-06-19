@@ -8,6 +8,7 @@
 class DatabaseManager
 {
 public:
+    static DatabaseManager& instance();
     static bool connect();
     static void disconnect();
     static QSqlDatabase database();
@@ -71,6 +72,10 @@ public:
                            QString& errorText);
 
 private:
+    DatabaseManager() = default;
+    DatabaseManager(const DatabaseManager&) = delete;
+    DatabaseManager& operator=(const DatabaseManager&) = delete;
+
     static bool tryOpenPsql();
     static bool tryOpenOdbc();
     static QString hashPassword(const QString& password);

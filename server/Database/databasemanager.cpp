@@ -16,6 +16,12 @@ QSqlDatabase DatabaseManager::db;
 QString DatabaseManager::m_lastError;
 QString DatabaseManager::m_currentDriverName;
 
+DatabaseManager& DatabaseManager::instance()
+{
+    static DatabaseManager manager;
+    return manager;
+}
+
 namespace
 {
     const QString PG_HOST = "localhost";
@@ -40,7 +46,7 @@ namespace
     {
         QMap<QString, TableConfig> map;
         map.insert("roles", {"roles", "Роли", {"id_role", "name", "description"}, {"id_role"}, {"name", "description"}, {"name", "description"}, "id_role"});
-        map.insert("users", {"users", "Пользователи", {"id_user", "login", "password_hash"}, {"id_user"}, {"login", "password_hash"}, {"login", "password_hash"}, "id_user"});
+        map.insert("users", {"users", "Пользователи", {"id_user", "login"}, {"id_user"}, {"login", "password"}, {"login"}, "id_user"});
         map.insert("users_roles", {"users_roles", "Пользователи и роли", {"id_user", "id_role"}, {"id_user", "id_role"}, {"id_user", "id_role"}, {}, "id_user, id_role"});
         map.insert("clients", {"clients", "Клиенты", {"id_client", "id_user", "name", "address", "phone", "requisites", "contact_person"}, {"id_client"}, {"id_user", "name", "address", "phone", "requisites", "contact_person"}, {"id_user", "name", "address", "phone", "requisites", "contact_person"}, "id_client"});
         map.insert("retail_spaces", {"retail_spaces", "Торговые точки", {"id_space", "rent_price_per_day", "has_air_conditioner", "area", "floor_number", "is_available"}, {"id_space"}, {"rent_price_per_day", "has_air_conditioner", "area", "floor_number", "is_available"}, {"rent_price_per_day", "has_air_conditioner", "area", "floor_number", "is_available"}, "id_space"});
@@ -353,14 +359,31 @@ bool DatabaseManager::addTableRow(const QString& tableKey,
         return false;
     }
 
-    QStringList placeholders;
-    for (int i = 0; i < cfg.addColumns.size(); ++i)
-        placeholders << ":v" + QString::number(i);
-
     QSqlQuery query(db);
-    query.prepare("INSERT INTO " + cfg.tableName + " (" + sqlList(cfg.addColumns) + ") VALUES (" + placeholders.join(", ") + ")");
-    for (int i = 0; i < values.size(); ++i)
-        query.bindValue(":v" + QString::number(i), values[i]);
+
+    if (tableKey == "users")
+    {
+        QRegularExpression regex(R"(^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$)");
+        if (!regex.match(values[1]).hasMatch())
+        {
+            errorText = "Пароль должен быть не короче 8 символов и содержать цифру, заглавную букву и специальный символ";
+            return false;
+        }
+
+        query.prepare("INSERT INTO users (login, password_hash) VALUES (:login, :password_hash)");
+        query.bindValue(":login", values[0]);
+        query.bindValue(":password_hash", hashPassword(values[1]));
+    }
+    else
+    {
+        QStringList placeholders;
+        for (int i = 0; i < cfg.addColumns.size(); ++i)
+            placeholders << ":v" + QString::number(i);
+
+        query.prepare("INSERT INTO " + cfg.tableName + " (" + sqlList(cfg.addColumns) + ") VALUES (" + placeholders.join(", ") + ")");
+        for (int i = 0; i < values.size(); ++i)
+            query.bindValue(":v" + QString::number(i), values[i]);
+    }
 
     if (!query.exec())
     {

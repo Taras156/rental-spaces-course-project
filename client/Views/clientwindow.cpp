@@ -243,52 +243,29 @@ void ClientWindow::handleServerMessage(const QString& message)
 {
     if (message.startsWith("FREE_SPACES"))
     {
-        QList<QStringList> rows;
-        QStringList blocks = message.split("|");
-        for (int i = 1; i < blocks.size(); ++i)
-            rows << blocks[i].split(";");
-        fillTable(freeSpacesTable,
-                  {QString::fromUtf8("ID точки"), QString::fromUtf8("Этаж"), QString::fromUtf8("Площадь"), QString::fromUtf8("Кондиционер"), QString::fromUtf8("Стоимость в день")},
-                  rows);
+        const QList<RetailSpace> spaces = parseFreeSpaces(message);
+        showFreeSpaces(spaces);
         return;
     }
 
     if (message.startsWith("CLIENT_CONTRACTS"))
     {
-        QList<QStringList> rows;
-        QStringList blocks = message.split("|");
-        for (int i = 1; i < blocks.size(); ++i)
-            rows << blocks[i].split(";");
-        fillTable(contractsTable,
-                  {QString::fromUtf8("ID договора"), QString::fromUtf8("Дата заключения"), QString::fromUtf8("ID точки"), QString::fromUtf8("Начало"), QString::fromUtf8("Окончание"), QString::fromUtf8("Плановая сумма")},
-                  rows);
+        const QList<ContractInfo> contracts = parseContracts(message);
+        showContracts(contracts);
         return;
     }
 
     if (message.startsWith("CLIENT_PAYMENTS"))
     {
-        QList<QStringList> rows;
-        QStringList blocks = message.split("|");
-        for (int i = 1; i < blocks.size(); ++i)
-            rows << blocks[i].split(";");
-        fillTable(paymentsTable,
-                  {QString::fromUtf8("ID договора"), QString::fromUtf8("ID точки"), QString::fromUtf8("Дата оплаты"), QString::fromUtf8("Сумма")},
-                  rows);
+        const QList<PaymentInfo> payments = parsePayments(message);
+        showPayments(payments);
         return;
     }
 
     if (message.startsWith("CLIENT_PROFILE|"))
     {
-        QString data = message.section('|', 1);
-        QStringList values = data.split(";");
-        if (values.size() >= 7)
-        {
-            nameEdit->setText(decodeValue(values[2]));
-            addressEdit->setText(decodeValue(values[3]));
-            phoneEdit->setText(decodeValue(values[4]));
-            requisitesEdit->setText(decodeValue(values[5]));
-            contactPersonEdit->setText(decodeValue(values[6]));
-        }
+        const Client client = parseClientProfile(message);
+        showClientProfile(client);
         return;
     }
 
@@ -312,19 +289,162 @@ void ClientWindow::handleServerMessage(const QString& message)
     }
 }
 
-void ClientWindow::fillTable(QTableWidget* table, const QStringList& headers, const QList<QStringList>& rows)
+QList<RetailSpace> ClientWindow::parseFreeSpaces(const QString& message) const
+{
+    QList<RetailSpace> spaces;
+    const QStringList blocks = message.split("|");
+
+    for (int i = 1; i < blocks.size(); ++i)
+    {
+        const QStringList values = blocks[i].split(";");
+        if (values.size() < 5)
+            continue;
+
+        const bool hasAirConditioner = decodeValue(values[3]).toLower() == "true" || decodeValue(values[3]) == QString::fromUtf8("Да");
+        spaces.append(RetailSpace(
+            decodeValue(values[0]).toInt(),
+            decodeValue(values[1]).toInt(),
+            decodeValue(values[2]).toDouble(),
+            hasAirConditioner,
+            decodeValue(values[4]).toDouble()
+        ));
+    }
+
+    return spaces;
+}
+
+QList<ContractInfo> ClientWindow::parseContracts(const QString& message) const
+{
+    QList<ContractInfo> contracts;
+    const QStringList blocks = message.split("|");
+
+    for (int i = 1; i < blocks.size(); ++i)
+    {
+        const QStringList values = blocks[i].split(";");
+        if (values.size() < 6)
+            continue;
+
+        contracts.append(ContractInfo(
+            decodeValue(values[0]).toInt(),
+            decodeValue(values[1]),
+            decodeValue(values[2]).toInt(),
+            decodeValue(values[3]),
+            decodeValue(values[4]),
+            decodeValue(values[5]).toDouble()
+        ));
+    }
+
+    return contracts;
+}
+
+QList<PaymentInfo> ClientWindow::parsePayments(const QString& message) const
+{
+    QList<PaymentInfo> payments;
+    const QStringList blocks = message.split("|");
+
+    for (int i = 1; i < blocks.size(); ++i)
+    {
+        const QStringList values = blocks[i].split(";");
+        if (values.size() < 4)
+            continue;
+
+        payments.append(PaymentInfo(
+            decodeValue(values[0]).toInt(),
+            decodeValue(values[1]).toInt(),
+            decodeValue(values[2]),
+            decodeValue(values[3]).toDouble()
+        ));
+    }
+
+    return payments;
+}
+
+Client ClientWindow::parseClientProfile(const QString& message) const
+{
+    const QString data = message.section('|', 1);
+    const QStringList values = data.split(";");
+
+    if (values.size() < 7)
+        return Client();
+
+    return Client(
+        decodeValue(values[0]).toInt(),
+        decodeValue(values[1]).toInt(),
+        decodeValue(values[2]),
+        decodeValue(values[3]),
+        decodeValue(values[4]),
+        decodeValue(values[5]),
+        decodeValue(values[6])
+    );
+}
+
+void ClientWindow::showFreeSpaces(const QList<RetailSpace>& spaces)
+{
+    setupTable(freeSpacesTable,
+               {QString::fromUtf8("ID точки"), QString::fromUtf8("Этаж"), QString::fromUtf8("Площадь"), QString::fromUtf8("Кондиционер"), QString::fromUtf8("Стоимость в день")},
+               spaces.size());
+
+    for (int row = 0; row < spaces.size(); ++row)
+    {
+        const RetailSpace& space = spaces[row];
+        freeSpacesTable->setItem(row, 0, new QTableWidgetItem(QString::number(space.idSpace())));
+        freeSpacesTable->setItem(row, 1, new QTableWidgetItem(QString::number(space.floorNumber())));
+        freeSpacesTable->setItem(row, 2, new QTableWidgetItem(QString::number(space.area(), 'f', 2)));
+        freeSpacesTable->setItem(row, 3, new QTableWidgetItem(space.hasAirConditioner() ? QString::fromUtf8("Да") : QString::fromUtf8("Нет")));
+        freeSpacesTable->setItem(row, 4, new QTableWidgetItem(QString::number(space.rentPricePerDay(), 'f', 2)));
+    }
+}
+
+void ClientWindow::showContracts(const QList<ContractInfo>& contracts)
+{
+    setupTable(contractsTable,
+               {QString::fromUtf8("ID договора"), QString::fromUtf8("Дата заключения"), QString::fromUtf8("ID точки"), QString::fromUtf8("Начало"), QString::fromUtf8("Окончание"), QString::fromUtf8("Плановая сумма")},
+               contracts.size());
+
+    for (int row = 0; row < contracts.size(); ++row)
+    {
+        const ContractInfo& contract = contracts[row];
+        contractsTable->setItem(row, 0, new QTableWidgetItem(QString::number(contract.idContract())));
+        contractsTable->setItem(row, 1, new QTableWidgetItem(contract.conclusionDate()));
+        contractsTable->setItem(row, 2, new QTableWidgetItem(QString::number(contract.idSpace())));
+        contractsTable->setItem(row, 3, new QTableWidgetItem(contract.startDate()));
+        contractsTable->setItem(row, 4, new QTableWidgetItem(contract.endDate()));
+        contractsTable->setItem(row, 5, new QTableWidgetItem(QString::number(contract.plannedAmount(), 'f', 2)));
+    }
+}
+
+void ClientWindow::showPayments(const QList<PaymentInfo>& payments)
+{
+    setupTable(paymentsTable,
+               {QString::fromUtf8("ID договора"), QString::fromUtf8("ID точки"), QString::fromUtf8("Дата оплаты"), QString::fromUtf8("Сумма")},
+               payments.size());
+
+    for (int row = 0; row < payments.size(); ++row)
+    {
+        const PaymentInfo& payment = payments[row];
+        paymentsTable->setItem(row, 0, new QTableWidgetItem(QString::number(payment.idContract())));
+        paymentsTable->setItem(row, 1, new QTableWidgetItem(QString::number(payment.idSpace())));
+        paymentsTable->setItem(row, 2, new QTableWidgetItem(payment.paymentDate()));
+        paymentsTable->setItem(row, 3, new QTableWidgetItem(QString::number(payment.paymentAmount(), 'f', 2)));
+    }
+}
+
+void ClientWindow::showClientProfile(const Client& client)
+{
+    if (client.idClient() == 0)
+        return;
+
+    nameEdit->setText(client.name());
+    addressEdit->setText(client.address());
+    phoneEdit->setText(client.phone());
+    requisitesEdit->setText(client.requisites());
+    contactPersonEdit->setText(client.contactPerson());
+}
+
+void ClientWindow::setupTable(QTableWidget* table, const QStringList& headers, int rowCount)
 {
     table->clear();
     table->setColumnCount(headers.size());
     table->setHorizontalHeaderLabels(headers);
-    table->setRowCount(rows.size());
-
-    for (int row = 0; row < rows.size(); ++row)
-    {
-        for (int col = 0; col < headers.size(); ++col)
-        {
-            QString value = col < rows[row].size() ? decodeValue(rows[row][col]) : QString();
-            table->setItem(row, col, new QTableWidgetItem(value));
-        }
-    }
+    table->setRowCount(rowCount);
 }
