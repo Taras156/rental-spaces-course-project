@@ -499,48 +499,73 @@ QString DatabaseManager::getFinanceReport(const QString& startDate,
                 date_trunc('month', CAST(:end_date AS date)),
                 interval '1 month'
             )::date AS month_start
+        ),
+        report_rows AS (
+            SELECT
+                rm.month_start,
+                to_char(rm.month_start, 'MM.YYYY') AS report_month,
+                c.name AS client_name,
+                rc.id_contract,
+                rs.id_space,
+                sp.floor_number,
+                sp.area,
+                sp.rent_price_per_day AS daily_rent,
+                GREATEST(rs.start_date, rm.month_start, CAST(:start_date AS date)) AS accrual_start,
+                LEAST(
+                    rs.end_date,
+                    (rm.month_start + interval '1 month' - interval '1 day')::date,
+                    CAST(:end_date AS date)
+                ) AS accrual_end
+            FROM report_months rm
+            JOIN rented_spaces rs
+              ON rs.start_date <= LEAST((rm.month_start + interval '1 month' - interval '1 day')::date, CAST(:end_date AS date))
+             AND rs.end_date >= GREATEST(rm.month_start, CAST(:start_date AS date))
+            JOIN rental_contracts rc ON rc.id_contract = rs.id_contract
+            JOIN clients c ON c.id_client = rc.id_client
+            JOIN retail_spaces sp ON sp.id_space = rs.id_space
         )
         SELECT
-            to_char(rm.month_start, 'MM.YYYY') AS report_month,
-            c.name AS client_name,
-            rc.id_contract,
-            rs.id_space,
-            sp.floor_number,
-            sp.area,
-            sp.rent_price_per_day AS monthly_rent,
+            rr.report_month,
+            rr.client_name,
+            rr.id_contract,
+            rr.id_space,
+            rr.floor_number,
+            rr.area,
+            rr.daily_rent,
+            rr.accrual_start,
+            rr.accrual_end,
+            (rr.accrual_end - rr.accrual_start + 1) AS rent_days,
+            ((rr.accrual_end - rr.accrual_start + 1) * rr.daily_rent) AS planned_amount,
             COALESCE(SUM(p.payment_amount), 0) AS paid_amount,
-            sp.rent_price_per_day - COALESCE(SUM(p.payment_amount), 0) AS debt,
+            ((rr.accrual_end - rr.accrual_start + 1) * rr.daily_rent) - COALESCE(SUM(p.payment_amount), 0) AS debt,
             CASE
-                WHEN COALESCE(SUM(p.payment_amount), 0) > sp.rent_price_per_day THEN 'Переплата'
-                WHEN COALESCE(SUM(p.payment_amount), 0) = sp.rent_price_per_day THEN 'Оплачено'
+                WHEN COALESCE(SUM(p.payment_amount), 0) > ((rr.accrual_end - rr.accrual_start + 1) * rr.daily_rent) THEN 'Переплата'
+                WHEN COALESCE(SUM(p.payment_amount), 0) = ((rr.accrual_end - rr.accrual_start + 1) * rr.daily_rent) THEN 'Оплачено'
                 WHEN COALESCE(SUM(p.payment_amount), 0) = 0 THEN 'Не оплачено'
                 ELSE 'Частично оплачено'
             END AS payment_status
-        FROM report_months rm
-        JOIN rented_spaces rs
-          ON rs.start_date <= (rm.month_start + interval '1 month' - interval '1 day')::date
-         AND rs.end_date >= rm.month_start
-        JOIN rental_contracts rc ON rc.id_contract = rs.id_contract
-        JOIN clients c ON c.id_client = rc.id_client
-        JOIN retail_spaces sp ON sp.id_space = rs.id_space
+        FROM report_rows rr
         LEFT JOIN payments p
-          ON p.id_contract = rs.id_contract
-         AND p.id_space = rs.id_space
-         AND p.payment_date >= rm.month_start
-         AND p.payment_date < (rm.month_start + interval '1 month')::date
+          ON p.id_contract = rr.id_contract
+         AND p.id_space = rr.id_space
+         AND p.payment_date >= rr.accrual_start
+         AND p.payment_date <= rr.accrual_end
         GROUP BY
-            rm.month_start,
-            c.name,
-            rc.id_contract,
-            rs.id_space,
-            sp.floor_number,
-            sp.area,
-            sp.rent_price_per_day
+            rr.month_start,
+            rr.report_month,
+            rr.client_name,
+            rr.id_contract,
+            rr.id_space,
+            rr.floor_number,
+            rr.area,
+            rr.daily_rent,
+            rr.accrual_start,
+            rr.accrual_end
         ORDER BY
-            rm.month_start,
-            c.name,
-            rc.id_contract,
-            rs.id_space
+            rr.month_start,
+            rr.client_name,
+            rr.id_contract,
+            rr.id_space
     )SQL");
 
     query.bindValue(":start_date", startDate);
@@ -565,11 +590,13 @@ QString DatabaseManager::getFinanceReport(const QString& startDate,
         const int contractId = query.value("id_contract").toInt();
         const int spaceId = query.value("id_space").toInt();
         const double area = query.value("area").toDouble();
-        const double monthlyRent = query.value("monthly_rent").toDouble();
+        const double dailyRent = query.value("daily_rent").toDouble();
+        const int rentDays = query.value("rent_days").toInt();
+        const double planned = query.value("planned_amount").toDouble();
         const double paid = query.value("paid_amount").toDouble();
         const double debt = query.value("debt").toDouble();
 
-        totalPlanned += monthlyRent;
+        totalPlanned += planned;
         totalPaid += paid;
         totalDebt += debt;
         contractIds.insert(contractId);
@@ -580,6 +607,8 @@ QString DatabaseManager::getFinanceReport(const QString& startDate,
             spaceIds.insert(spaceId);
         }
 
+        QString period = query.value("accrual_start").toString() + " — " + query.value("accrual_end").toString();
+
         QStringList values;
         values << encodeValue(query.value("report_month").toString());
         values << encodeValue(query.value("client_name").toString());
@@ -587,7 +616,10 @@ QString DatabaseManager::getFinanceReport(const QString& startDate,
         values << QString::number(spaceId);
         values << QString::number(query.value("floor_number").toInt());
         values << QString::number(area, 'f', 2);
-        values << QString::number(monthlyRent, 'f', 2);
+        values << QString::number(dailyRent, 'f', 2);
+        values << encodeValue(period);
+        values << QString::number(rentDays);
+        values << QString::number(planned, 'f', 2);
         values << QString::number(paid, 'f', 2);
         values << QString::number(debt, 'f', 2);
         values << encodeValue(query.value("payment_status").toString());
@@ -598,7 +630,7 @@ QString DatabaseManager::getFinanceReport(const QString& startDate,
     const double percent = totalPlanned > 0.0 ? (totalPaid / totalPlanned) * 100.0 : 0.0;
 
     QString headers = QString::fromUtf8(
-        "Месяц;Клиент;Договор;Точка;Этаж;Площадь м²;Начислено за месяц;Оплачено за месяц;Долг;Статус"
+        "Месяц;Клиент;Договор;Точка;Этаж;Площадь м²;Ставка в день;Период начисления;Дней;Начислено;Оплачено;Долг;Статус"
     );
 
     return "FINANCE_REPORT&"

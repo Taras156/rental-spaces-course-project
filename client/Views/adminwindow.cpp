@@ -89,7 +89,7 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
     addTableButton(mainGrid, 0, 1, QString::fromUtf8("Торговые точки"), "retail_spaces", QString::fromUtf8("Торговые точки"), QString::fromUtf8("Этаж, площадь, кондиционер и стоимость аренды"));
     addTableButton(mainGrid, 1, 0, QString::fromUtf8("Договоры аренды"), "rental_contracts", QString::fromUtf8("Договоры аренды"), QString::fromUtf8("Клиент и дата заключения договора"));
     addTableButton(mainGrid, 1, 1, QString::fromUtf8("Арендуемые точки"), "rented_spaces", QString::fromUtf8("Арендуемые точки"), QString::fromUtf8("Связь договора с торговой точкой и периодом аренды"));
-    addTableButton(mainGrid, 2, 0, QString::fromUtf8("Платежи"), "payments", QString::fromUtf8("Платежи"), QString::fromUtf8("Ежемесячные платежи арендаторов"));
+    addTableButton(mainGrid, 2, 0, QString::fromUtf8("Платежи"), "payments", QString::fromUtf8("Платежи"), QString::fromUtf8("Платежи арендаторов по договорам"));
 
     QGridLayout* usersGrid = addGroup(QString::fromUtf8("Пользователи и права доступа"));
     addTableButton(usersGrid, 0, 0, QString::fromUtf8("Пользователи"), "users", QString::fromUtf8("Пользователи"), QString::fromUtf8("Логины и хэши паролей"));
@@ -98,8 +98,8 @@ AdminWindow::AdminWindow(const User& user, QWidget* parent)
 
     QGridLayout* actionGrid = addGroup(QString::fromUtf8("Быстрые действия"));
     QPushButton* createContractButton = makeButton(QString::fromUtf8("Оформить договор аренды"), QString::fromUtf8("Создать один договор и привязать к нему несколько торговых точек"));
-    QPushButton* addPaymentButton = makeButton(QString::fromUtf8("Добавить платеж"), QString::fromUtf8("Внести ежемесячный платеж по договору и торговой точке"));
-    QPushButton* financeReportButton = makeButton(QString::fromUtf8("Финансовый отчет"), QString::fromUtf8("Показать начисления, оплаты и задолженность по месяцам"));
+    QPushButton* addPaymentButton = makeButton(QString::fromUtf8("Добавить платеж"), QString::fromUtf8("Внести платеж по договору и торговой точке"));
+    QPushButton* financeReportButton = makeButton(QString::fromUtf8("Финансовый отчет"), QString::fromUtf8("Показать начисления по дням, оплаты и задолженность"));
     actionGrid->addWidget(createContractButton, 0, 0);
     actionGrid->addWidget(addPaymentButton, 0, 1);
     actionGrid->addWidget(financeReportButton, 1, 0, 1, 2);

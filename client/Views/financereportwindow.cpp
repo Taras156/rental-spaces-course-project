@@ -40,7 +40,7 @@ void FinanceReportWindow::setupUi()
     titleLabel->setObjectName("MainTitle");
 
     QLabel* hintLabel = new QLabel(
-        QString::fromUtf8("Отчет показывает ежемесячные начисления, поступившие платежи и задолженность арендаторов."),
+        QString::fromUtf8("Отчет рассчитывает аренду по дням: ставка за день умножается на количество дней аренды в выбранном периоде."),
         this);
     hintLabel->setObjectName("HintLabel");
     hintLabel->setWordWrap(true);
@@ -217,5 +217,5 @@ void FinanceReportWindow::handleServerMessage(const QString& message)
         }
     }
 
-    statusLabel->setText(QString::fromUtf8("Отчет сформирован. Начисления считаются по месячной ставке аренды."));
+    statusLabel->setText(QString::fromUtf8("Отчет сформирован. Начисления считаются по дневной ставке аренды."));
 }
