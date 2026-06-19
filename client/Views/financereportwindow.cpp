@@ -58,6 +58,10 @@ void FinanceReportWindow::setupUi()
     endDateEdit->setCalendarPopup(true);
     startDateEdit->setDisplayFormat("yyyy-MM-dd");
     endDateEdit->setDisplayFormat("yyyy-MM-dd");
+
+    startDateEdit->setMinimumWidth(150);
+    endDateEdit->setMinimumWidth(150);
+
     loadButton->setMinimumHeight(38);
 
     filterLayout->addWidget(new QLabel(QString::fromUtf8("Период с:"), this));

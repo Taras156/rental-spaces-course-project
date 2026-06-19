@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QPen>
+#include <QSizePolicy>
 
 ThemeToggleSwitch::ThemeToggleSwitch(QWidget* parent)
     : QAbstractButton(parent)
@@ -13,17 +14,19 @@ ThemeToggleSwitch::ThemeToggleSwitch(QWidget* parent)
     setCursor(Qt::PointingHandCursor);
     setToolTip(QString::fromUtf8("Сменить тему"));
     setFocusPolicy(Qt::NoFocus);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setFixedSize(sizeHint());
     setChecked(ThemeManager::currentTheme() == ThemeManager::Theme9_SkyLight);
 }
 
 QSize ThemeToggleSwitch::sizeHint() const
 {
-    return QSize(66, 34);
+    return QSize(54, 28);
 }
 
 QSize ThemeToggleSwitch::minimumSizeHint() const
 {
-    return QSize(66, 34);
+    return QSize(54, 28);
 }
 
 void ThemeToggleSwitch::paintEvent(QPaintEvent* event)

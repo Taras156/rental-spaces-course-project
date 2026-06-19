@@ -51,7 +51,7 @@ void ClientWindow::setupUi()
     QPushButton* refreshButton = new QPushButton(QString::fromUtf8("Обновить данные"), this);
     refreshButton->setMinimumHeight(40);
 
-    actionsBlock->addWidget(themeSwitch);
+    actionsBlock->addWidget(themeSwitch, 0, Qt::AlignRight);
     actionsBlock->addWidget(refreshButton);
     actionsBlock->addStretch();
 
@@ -80,6 +80,10 @@ void ClientWindow::setupUi()
     endDateEdit->setCalendarPopup(true);
     startDateEdit->setDisplayFormat("yyyy-MM-dd");
     endDateEdit->setDisplayFormat("yyyy-MM-dd");
+
+    startDateEdit->setMinimumWidth(150);
+    endDateEdit->setMinimumWidth(150);
+
     QPushButton* findButton = new QPushButton(QString::fromUtf8("Найти площади"), this);
 
     dateLayout->addWidget(new QLabel(QString::fromUtf8("Начало:"), this));

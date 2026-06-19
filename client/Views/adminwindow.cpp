@@ -186,6 +186,9 @@ void AdminWindow::showCreateContractDialog()
     startDateEdit->setDisplayFormat("yyyy-MM-dd");
     endDateEdit->setDisplayFormat("yyyy-MM-dd");
 
+    startDateEdit->setMinimumWidth(150);
+    endDateEdit->setMinimumWidth(150);
+
     spaceIdsEdit->setPlaceholderText(QString::fromUtf8("Например: 231, 232, 233"));
 
     helpText->setReadOnly(true);
@@ -298,6 +301,7 @@ void AdminWindow::showAddPaymentDialog()
     spaceIdEdit->setRange(1, 1000000);
     paymentDateEdit->setCalendarPopup(true);
     paymentDateEdit->setDisplayFormat("yyyy-MM-dd");
+    paymentDateEdit->setMinimumWidth(150);
     amountEdit->setPlaceholderText(QString::fromUtf8("Например, 25000"));
 
     form->addRow(QString::fromUtf8("ID договора:"), contractIdEdit);
